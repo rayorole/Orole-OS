@@ -52,6 +52,7 @@ function TextModeGate({ children }: { children: React.ReactNode }) {
 =======
 const NAV = [
   { to: '/', label: 'Mission Control' },
+  { to: '/heatmap', label: 'Heatmap' },
 ] as const
 >>>>>>> 8ef481b (feat(ui): dark HUD design system, purge TanStack starter boilerplate)
 

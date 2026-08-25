@@ -10,78 +10,43 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-<<<<<<< HEAD
-import { Route as AboutRouteImport } from './routes/about'
-import { Route as SettingsRouteImport } from './routes/settings'
-=======
->>>>>>> 8ef481b (feat(ui): dark HUD design system, purge TanStack starter boilerplate)
+import { Route as HeatmapRouteImport } from './routes/heatmap'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-<<<<<<< HEAD
-const AboutRoute = AboutRouteImport.update({
-  id: '/about',
-  path: '/about',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SettingsRoute = SettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
+const HeatmapRoute = HeatmapRouteImport.update({
+  id: '/heatmap',
+  path: '/heatmap',
   getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/about': typeof AboutRoute
-  '/settings': typeof SettingsRoute
+  '/heatmap': typeof HeatmapRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/about': typeof AboutRoute
-  '/settings': typeof SettingsRoute
-=======
-
-export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-}
-export interface FileRoutesByTo {
-  '/': typeof IndexRoute
->>>>>>> 8ef481b (feat(ui): dark HUD design system, purge TanStack starter boilerplate)
+  '/heatmap': typeof HeatmapRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-<<<<<<< HEAD
-  '/about': typeof AboutRoute
-  '/settings': typeof SettingsRoute
+  '/heatmap': typeof HeatmapRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about' | '/settings'
+  fullPaths: '/' | '/heatmap'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/settings'
-  id: '__root__' | '/' | '/about' | '/settings'
-=======
-}
-export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
-  fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
->>>>>>> 8ef481b (feat(ui): dark HUD design system, purge TanStack starter boilerplate)
+  to: '/' | '/heatmap'
+  id: '__root__' | '/' | '/heatmap'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-<<<<<<< HEAD
-  AboutRoute: typeof AboutRoute
-  SettingsRoute: typeof SettingsRoute
-=======
->>>>>>> 8ef481b (feat(ui): dark HUD design system, purge TanStack starter boilerplate)
+  HeatmapRoute: typeof HeatmapRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -93,34 +58,29 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-<<<<<<< HEAD
-    '/about': {
-      id: '/about'
-      path: '/about'
-      fullPath: '/about'
-      preLoaderRoute: typeof AboutRouteImport
+    '/heatmap': {
+      id: '/heatmap'
+      path: '/heatmap'
+      fullPath: '/heatmap'
+      preLoaderRoute: typeof HeatmapRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/settings': {
-      id: '/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof SettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-=======
->>>>>>> 8ef481b (feat(ui): dark HUD design system, purge TanStack starter boilerplate)
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-<<<<<<< HEAD
-  AboutRoute: AboutRoute,
-  SettingsRoute: SettingsRoute,
-=======
->>>>>>> 8ef481b (feat(ui): dark HUD design system, purge TanStack starter boilerplate)
+  HeatmapRoute: HeatmapRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
