@@ -4,6 +4,7 @@ import { TanStackDevtools } from '@tanstack/react-devtools'
 import Footer from '../components/Footer'
 import Header from '../components/Header'
 import { AppProviders } from '../lib/query-provider'
+import { RootEventStreamMount } from '../lib/event-store'
 
 import appCss from '../styles.css?url'
 
@@ -42,6 +43,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body className="dark font-sans antialiased [overflow-wrap:anywhere] selection:bg-neon-cyan/20">
         <AppProviders>
+          {/* Single app-wide SSE connection, mounted ABOVE the router outlet
+              so every route shares one connection — never per-page streams. */}
+          <RootEventStreamMount />
           <Header />
           {children}
           <Footer />
