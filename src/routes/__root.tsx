@@ -3,6 +3,7 @@ import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import Footer from '../components/Footer'
 import Header from '../components/Header'
+import JarvisStatusBar from '../components/JarvisStatusBar'
 import { AppProviders } from '../lib/query-provider'
 
 import appCss from '../styles.css?url'
@@ -43,7 +44,10 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <body className="dark font-sans antialiased [overflow-wrap:anywhere] selection:bg-neon-cyan/20">
         <AppProviders>
           <Header />
-          {children}
+          <div className="pb-10">
+            {children}
+          </div>
+          <JarvisStatusBar />
           <Footer />
         </AppProviders>
         <TanStackDevtools
