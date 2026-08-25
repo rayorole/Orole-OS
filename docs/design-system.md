@@ -13,6 +13,22 @@ with customized CSS variables. Single source of truth:
 - Background has a faint grid + top radial glow — ambient, never competing
   with content.
 
+### shadcn preset integration (`radix-nova`)
+
+The project is initialized from the shadcn preset `b3eywbZAag`
+(`components.json`: style `radix-nova`, base color `mist`). The preset's
+generated light palette was **rejected**; `:root` keeps the deep-space HUD
+tokens above as the single theme. What was kept from the preset:
+
+- `@import "shadcn/tailwind.css"` plus self-hosted
+  `@fontsource-variable/geist` / `@fontsource-variable/inter` fonts.
+- Extra radius steps (`--radius-2xl..4xl`) and the `--font-heading` token
+  (`Geist Variable`) used by newer preset components.
+- Pointer cursor for buttons, `border-border outline-ring/50` base rules.
+- Stock `radix-nova` component sources under `src/components/ui/`, with local
+  additions preserved on upgrade: Badge keeps its `running` / `pending` /
+  `failed` / `idle` status variants and exports `StatusDot`.
+
 ## Palette
 
 | Token | Value (oklch) | Use |

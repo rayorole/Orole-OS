@@ -1,5 +1,8 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/inter";
+@import "@fontsource-variable/geist";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -119,7 +122,8 @@
 
   /* Intentional HUD type pair: Geist for UI, JetBrains Mono for data/terminal. */
   --font-sans:
-    "Geist", "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+    "Geist Variable", "Geist", "Inter Variable", ui-sans-serif, system-ui,
+    -apple-system, sans-serif;
   --font-mono:
     "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 
@@ -127,16 +131,22 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  --font-heading: 'Geist Variable', sans-serif;
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
 @layer base {
   * {
     border-color: var(--color-border);
     outline-color: color-mix(in oklab, var(--color-ring) 50%, transparent);
+    @apply border-border outline-ring/50;
   }
 
   html {
     color-scheme: dark;
+    @apply font-sans;
   }
 
   body {
@@ -152,6 +162,10 @@
       linear-gradient(90deg, oklch(1 0 0 / 2%) 1px, transparent 1px);
     background-size: auto, 48px 48px, 48px 48px;
     font-family: var(--font-sans);
+    @apply bg-background text-foreground;
+  }
+  button:not(:disabled), [role="button"]:not(:disabled) {
+    cursor: pointer;
   }
 }
 
