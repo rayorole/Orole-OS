@@ -2,8 +2,9 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "npm run build",
   "outputDirectory": ".output/public",
+  "cleanUrls": true,
   "rewrites": [
-    { "source": "/api/gateway/(.*)", "destination": "/api/gateway" },
+    { "source": "/api/gateway/:path*", "destination": "/api/gateway" },
     { "source": "/((?!api/).*)", "destination": "/$1" }
   ]
 }
