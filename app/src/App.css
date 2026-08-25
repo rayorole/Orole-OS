@@ -1,0 +1,89 @@
+:root {
+  --bg: #05070d;
+  --panel: #0b1120;
+  --accent: #35e0ff;
+  --text: #d8e6f0;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "SF Mono", ui-monospace, monospace;
+}
+
+.orole-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  gap: 1rem;
+}
+
+.orole-title {
+  letter-spacing: 0.4em;
+  color: var(--accent);
+  text-shadow: 0 0 18px rgba(53, 224, 255, 0.5);
+  margin: 0;
+}
+
+.orole-sub {
+  opacity: 0.7;
+  margin: 0;
+}
+
+.voice-panel {
+  margin-top: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: 34rem;
+}
+
+.ptt-btn {
+  width: 11rem;
+  height: 11rem;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  background: radial-gradient(circle at center, #10203a, var(--panel));
+  color: var(--text);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: box-shadow 0.15s ease, transform 0.1s ease;
+  user-select: none;
+  touch-action: none;
+}
+
+.ptt-btn.recording {
+  animation: pulse 1.2s infinite;
+  transform: scale(1.04);
+}
+
+.ptt-btn:disabled {
+  cursor: wait;
+  opacity: 0.85;
+}
+
+.ptt-icon {
+  font-size: 2.4rem;
+}
+
+.ptt-label {
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+}
+
+.voice-error {
+  color: #ff6479;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(53, 224, 255, 0.45); }
+  100% { box-shadow: 0 0 0 26px rgba(53, 224, 255, 0); }
+}

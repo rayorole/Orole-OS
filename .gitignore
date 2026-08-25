@@ -1,0 +1,10 @@
+node_modules
+.tanstack
+.output
+.env
+.env*.local
+dist
+build
+.DS_Store
+*.log
+tsconfig.tsbuildinfo
