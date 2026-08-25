@@ -1,5 +1,6 @@
 import { HeadContent, Scripts, createRootRoute, Link } from '@tanstack/react-router'
 import { AppProviders } from '../lib/query-provider'
+import { ApprovalNavBadge } from '../lib/use-approvals'
 
 import appCss from '../styles.css?url'
 
@@ -30,6 +31,8 @@ export const Route = createRootRoute({
 const NAV = [
   { to: '/', label: 'Mission Control' },
 ] as const
+
+const NAV_APPROVALS = { to: '/approvals', label: 'Approvals' } as const
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
@@ -72,6 +75,20 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                       {item.label}
                     </Link>
                   ))}
+                  <Link
+                    to={NAV_APPROVALS.to}
+                    activeProps={{
+                      className:
+                        'font-mono text-xs uppercase tracking-[0.2em] text-neon-cyan no-underline',
+                    }}
+                    inactiveProps={{
+                      className:
+                        'font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground no-underline transition-colors hover:text-foreground',
+                    }}
+                  >
+                    {NAV_APPROVALS.label}
+                    <ApprovalNavBadge />
+                  </Link>
                 </div>
               </nav>
             </header>
