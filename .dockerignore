@@ -1,0 +1,13 @@
+node_modules
+.output
+.nitro
+.cache
+dist
+.env*
+!.env.example
+*.log
+.git
+.github
+AGENTS.md
+VOICE.md
+README.md
