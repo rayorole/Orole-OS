@@ -2,7 +2,12 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 
+import { Alert, AlertDescription, AlertTitle } from '#/components/ui/alert'
+import { Badge } from '#/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#/components/ui/card'
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '#/components/ui/empty'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '#/components/ui/table'
+import { Tabs, TabsList, TabsTrigger } from '#/components/ui/tabs'
 import { CreditsGauge } from '#/components/CreditsGauge'
 import { formatUsd, useCountUp } from '#/components/CostTicker'
 import {
@@ -28,27 +33,22 @@ type WindowKey = (typeof WINDOWS)[number]['value']
 
 function WindowSelector({ value, onChange }: { value: WindowKey; onChange: (w: WindowKey) => void }) {
   return (
-    <div
-      role="tablist"
-      aria-label="Cost window"
-      className="inline-flex overflow-hidden rounded-full border border-neon-cyan/30 bg-card"
-    >
-      {WINDOWS.map((w) => (
-        <button
-          key={w.value}
-          role="tab"
-          aria-selected={value === w.value}
-          onClick={() => onChange(w.value)}
-          className={`px-4 py-1.5 font-mono text-xs tracking-widest transition ${
-            value === w.value
-              ? 'bg-primary text-primary-foreground shadow-[0_0_12px_var(--grid-glow)]'
-              : 'text-muted-foreground hover:text-neon-cyan'
-          }`}
-        >
-          {w.label}
-        </button>
-      ))}
-    </div>
+    <Tabs value={value} onValueChange={(v) => onChange(v as WindowKey)}>
+      <TabsList
+        aria-label="Cost window"
+        className="rounded-full border border-neon-cyan/30 bg-card"
+      >
+        {WINDOWS.map((w) => (
+          <TabsTrigger
+            key={w.value}
+            value={w.value}
+            className="px-4 font-mono text-xs tracking-widest data-[state=active]:shadow-[0_0_12px_var(--grid-glow)]"
+          >
+            {w.label}
+          </TabsTrigger>
+        ))}
+      </TabsList>
+    </Tabs>
   )
 }
 
@@ -62,26 +62,27 @@ const CONN_LABEL: Record<ConnState, string> = {
   stale: 'STALE',
 }
 
-const CONN_CLASS: Record<ConnState, string> = {
-  idle: 'border-[var(--border)] text-muted-foreground',
-  connecting: 'border-neon-cyan/40 text-neon-cyan',
-  live: 'border-emerald-400/50 text-emerald-400',
-  reconnecting: 'border-amber-400/50 text-amber-400',
-  stale: 'border-red-400/60 text-red-400',
+const CONN_VARIANT: Record<ConnState, 'idle' | 'pending' | 'running' | 'failed'> = {
+  idle: 'idle',
+  connecting: 'pending',
+  live: 'running',
+  reconnecting: 'pending',
+  stale: 'failed',
 }
 
 function ConnPill({ conn }: { conn: ConnState }) {
   const pulse = conn === 'live' || conn === 'reconnecting' || conn === 'connecting'
   return (
-    <span
-      className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 font-mono text-[10px] uppercase tracking-[0.25em] ${CONN_CLASS[conn]}`}
+    <Badge
+      variant={CONN_VARIANT[conn]}
+      className="gap-2 rounded-full px-3 py-1 font-mono text-[10px] uppercase tracking-[0.25em]"
     >
       <span
         className={`h-1.5 w-1.5 rounded-full bg-current ${pulse ? 'animate-pulse' : ''}`}
         aria-hidden="true"
       />
       {CONN_LABEL[conn]}
-    </span>
+    </Badge>
   )
 }
 
@@ -106,12 +107,13 @@ function TickerCard({
         <CardTitle className="font-mono text-3xl tabular-nums text-neon-cyan">
           {formatUsd(animated)}
           {estimated && (
-            <span
+            <Badge
+              variant="pending"
               title="Unknown model priced at blended estimate"
-              className="ml-2 align-middle rounded bg-amber-400/10 px-1.5 py-0.5 font-mono text-[10px] tracking-widest text-amber-400"
+              className="ml-2 align-middle font-mono text-[10px] tracking-widest"
             >
               EST.
-            </span>
+            </Badge>
           )}
         </CardTitle>
       </CardHeader>
@@ -181,9 +183,12 @@ function CostDashboard() {
       </div>
 
       {error && conn === 'stale' && (
-        <p className="rounded-md border border-red-400/40 bg-red-400/5 px-4 py-2 text-sm text-red-400">
-          Live feed stale — showing last known values ({error}). Retrying automatically.
-        </p>
+        <Alert variant="destructive" className="border-red-400/40 bg-red-400/5">
+          <AlertTitle>Live feed stale</AlertTitle>
+          <AlertDescription>
+            Showing last known values ({error}). Retrying automatically.
+          </AlertDescription>
+        </Alert>
       )}
 
       {/* Ticker strip */}
@@ -208,51 +213,57 @@ function CostDashboard() {
           </CardHeader>
           <CardContent>
             {agents.length === 0 ? (
-              <div className="flex h-48 items-center justify-center rounded-lg border border-dashed border-[var(--border)] text-sm text-muted-foreground">
-                No usage recorded in the selected window.
-              </div>
+              <Empty className="h-48 border">
+                <EmptyHeader>
+                  <EmptyTitle>No usage recorded</EmptyTitle>
+                  <EmptyDescription>
+                    Nothing recorded in the selected window yet.
+                  </EmptyDescription>
+                </EmptyHeader>
+              </Empty>
             ) : (
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-[var(--border)] text-left font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-                    <th className="cursor-pointer py-2 pr-3">Agent</th>
-                    <th className="py-2 pr-3">In</th>
-                    <th className="py-2 pr-3">Out</th>
-                    <th className="py-2 pr-3">$</th>
-                    <th className="py-2">Last activity</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-[var(--border)] hover:bg-transparent">
+                    <TableHead className="h-auto cursor-pointer py-2 pr-3 font-mono text-[10px] uppercase tracking-widest">Agent</TableHead>
+                    <TableHead className="h-auto py-2 pr-3 font-mono text-[10px] uppercase tracking-widest">In</TableHead>
+                    <TableHead className="h-auto py-2 pr-3 font-mono text-[10px] uppercase tracking-widest">Out</TableHead>
+                    <TableHead className="h-auto py-2 pr-3 font-mono text-[10px] uppercase tracking-widest">$</TableHead>
+                    <TableHead className="h-auto py-2 text-right font-mono text-[10px] uppercase tracking-widest">Last activity</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {agents.map((a) => (
-                    <tr key={a.agent} className="border-b border-[var(--border)]/50">
-                      <td className="py-2 pr-3 font-medium">
+                    <TableRow key={a.agent} className="border-[var(--border)]/50">
+                      <TableCell className="py-2 pr-3 font-medium">
                         {a.agent}
                         {a.estimated && (
-                          <span
+                          <Badge
+                            variant="pending"
                             title="Unknown model — blended estimate"
-                            className="ml-2 rounded bg-amber-400/10 px-1 py-0.5 font-mono text-[9px] tracking-widest text-amber-400"
+                            className="ml-2 font-mono text-[9px] tracking-widest"
                           >
                             EST.
-                          </span>
+                          </Badge>
                         )}
-                      </td>
-                      <td className="py-2 pr-3 font-mono text-muted-foreground">{fmtNum(a.inputTokens)}</td>
-                      <td className="py-2 pr-3 font-mono text-muted-foreground">{fmtNum(a.outputTokens)}</td>
-                      <td className="py-2 pr-3 font-mono font-semibold text-neon-cyan">
+                      </TableCell>
+                      <TableCell className="py-2 pr-3 font-mono text-muted-foreground">{fmtNum(a.inputTokens)}</TableCell>
+                      <TableCell className="py-2 pr-3 font-mono text-muted-foreground">{fmtNum(a.outputTokens)}</TableCell>
+                      <TableCell className="py-2 pr-3 font-mono font-semibold text-neon-cyan">
                         {a.cost.toFixed(4).replace(/0+$/, '').replace(/\.$/, '.00')}
-                      </td>
-                      <td className="py-2 font-mono text-xs text-muted-foreground">
+                      </TableCell>
+                      <TableCell className="py-2 text-right font-mono text-xs text-muted-foreground">
                         {a.lastActivity
                           ? new Date(a.lastActivity).toLocaleTimeString([], {
                               hour: '2-digit',
                               minute: '2-digit',
                             })
                           : '—'}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             )}
           </CardContent>
         </Card>

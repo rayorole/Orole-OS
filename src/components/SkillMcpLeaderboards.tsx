@@ -16,8 +16,13 @@ import {
   CardHeader,
   CardTitle,
 } from '#/components/ui/card'
+import { Alert, AlertDescription, AlertTitle } from '#/components/ui/alert'
 import { Badge } from '#/components/ui/badge'
-import { Button } from '#/components/ui/button'
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '#/components/ui/empty'
+import { ScrollArea } from '#/components/ui/scroll-area'
+import { Skeleton } from '#/components/ui/skeleton'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '#/components/ui/table'
+import { Tabs, TabsList, TabsTrigger } from '#/components/ui/tabs'
 import { cn } from '#/lib/utils'
 import {
   buildLeaderboard,
@@ -51,21 +56,15 @@ function WindowSelector({
   onChange: (w: TimeWindow) => void
 }) {
   return (
-    <div role="tablist" aria-label="Time window" className="flex gap-1">
-      {(['7d', '30d'] as const).map((w) => (
-        <Button
-          key={w}
-          role="tab"
-          aria-selected={value === w}
-          variant={value === w ? 'default' : 'outline'}
-          size="sm"
-          className="font-mono"
-          onClick={() => onChange(w)}
-        >
-          {w}
-        </Button>
-      ))}
-    </div>
+    <Tabs value={value} onValueChange={(v) => onChange(v as TimeWindow)}>
+      <TabsList aria-label="Time window">
+        {(['7d', '30d'] as const).map((w) => (
+          <TabsTrigger key={w} value={w} className="font-mono">
+            {w}
+          </TabsTrigger>
+        ))}
+      </TabsList>
+    </Tabs>
   )
 }
 
@@ -110,53 +109,53 @@ export function DeltaBadge({ deltaPct }: { deltaPct: number | null }) {
 function Leaderboard({ rows }: { rows: LeaderboardRow[] }) {
   if (!rows.length) {
     return (
-      <p
-        data-testid="leaderboard-empty"
-        className="py-10 text-center font-mono text-sm text-muted-foreground"
-      >
-        No skill or tool usage recorded in this window yet.
-      </p>
+      <Empty data-testid="leaderboard-empty" className="border">
+        <EmptyHeader>
+          <EmptyTitle>No usage recorded</EmptyTitle>
+          <EmptyDescription>
+            No skill or tool usage recorded in this window yet.
+          </EmptyDescription>
+        </EmptyHeader>
+      </Empty>
     )
   }
   return (
-    <table data-testid="leaderboard" className="w-full border-collapse">
-      <thead>
-        <tr className="hud-panel-title text-left">
-          <th scope="col" className="pb-2 pr-2 font-normal">#</th>
-          <th scope="col" className="pb-2 pr-2 font-normal">tool / skill</th>
-          <th scope="col" className="pb-2 pr-2 text-right font-normal">calls</th>
-          <th scope="col" className="pb-2 pr-2 font-normal">7-day trend</th>
-          <th scope="col" className="pb-2 text-right font-normal">vs prev</th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((r) => (
-          <tr
-            key={r.name}
-            data-testid={`lb-row-${r.name}`}
-            className="border-t border-border/60"
-          >
-            <td className="py-1.5 pr-2 font-mono text-xs text-muted-foreground">{r.rank}</td>
-            <td
-              className={cn(
-                'max-w-[16rem] truncate py-1.5 pr-2 font-mono text-sm',
-                r.isOthers && 'text-muted-foreground',
-              )}
-              title={r.name}
-            >
-              {r.name}
-            </td>
-            <td className="py-1.5 pr-2 text-right font-mono text-sm tabular-nums">{r.count}</td>
-            <td className="py-1.5 pr-2">
-              <Sparkline daily={r.daily} muted={r.isOthers} />
-            </td>
-            <td className="py-1.5 text-right">
-              <DeltaBadge deltaPct={r.deltaPct} />
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+    <ScrollArea className="max-h-[28rem]">
+      <Table data-testid="leaderboard">
+        <TableHeader>
+          <TableRow className="hover:bg-transparent">
+            <TableHead className="h-auto pb-2 pr-2 font-normal">#</TableHead>
+            <TableHead className="h-auto pb-2 pr-2 font-normal">tool / skill</TableHead>
+            <TableHead className="h-auto pb-2 pr-2 text-right font-normal">calls</TableHead>
+            <TableHead className="h-auto pb-2 pr-2 font-normal">7-day trend</TableHead>
+            <TableHead className="h-auto pb-2 text-right font-normal">vs prev</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {rows.map((r) => (
+            <TableRow key={r.name} data-testid={`lb-row-${r.name}`}>
+              <TableCell className="py-1.5 pr-2 font-mono text-xs text-muted-foreground">{r.rank}</TableCell>
+              <TableCell
+                className={cn(
+                  'max-w-[16rem] truncate py-1.5 pr-2 font-mono text-sm',
+                  r.isOthers && 'text-muted-foreground',
+                )}
+                title={r.name}
+              >
+                {r.name}
+              </TableCell>
+              <TableCell className="py-1.5 pr-2 text-right font-mono text-sm tabular-nums">{r.count}</TableCell>
+              <TableCell className="py-1.5 pr-2">
+                <Sparkline daily={r.daily} muted={r.isOthers} />
+              </TableCell>
+              <TableCell className="py-1.5 text-right">
+                <DeltaBadge deltaPct={r.deltaPct} />
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </ScrollArea>
   )
 }
 
@@ -194,12 +193,14 @@ function McpDonut({ slices, total }: { slices: McpSlice[]; total: number }) {
   const formatter = donutFormatter(total)
   if (!total) {
     return (
-      <p
-        data-testid="donut-empty"
-        className="py-10 text-center font-mono text-sm text-muted-foreground"
-      >
-        No MCP server calls recorded in this window yet.
-      </p>
+      <Empty data-testid="donut-empty" className="border">
+        <EmptyHeader>
+          <EmptyTitle>No MCP calls</EmptyTitle>
+          <EmptyDescription>
+            No MCP server calls recorded in this window yet.
+          </EmptyDescription>
+        </EmptyHeader>
+      </Empty>
     )
   }
   const data: DonutEntry[] = slices.map((s) => ({ name: s.server, count: s.count }))
@@ -230,21 +231,23 @@ function McpDonut({ slices, total }: { slices: McpSlice[]; total: number }) {
           <span className="hud-panel-title">calls this window</span>
         </div>
       </div>
-      <ul className="w-full space-y-1.5" data-testid="donut-legend">
-        {slices.map((s, i) => (
-          <li key={s.server} className="flex items-center gap-2 text-sm">
-            <span
-              aria-hidden="true"
-              className="size-2.5 shrink-0 rounded-full"
-              style={{ background: segmentColor(i) }}
-            />
-            <span className="flex-1 truncate font-mono">{s.server}</span>
-            <span className="font-mono tabular-nums text-muted-foreground">
-              {s.count} · {Math.round(s.sharePct)}%
-            </span>
-          </li>
-        ))}
-      </ul>
+      <ScrollArea className="max-h-56 w-full" data-testid="donut-legend">
+        <ul className="space-y-1.5 pr-3">
+          {slices.map((s, i) => (
+            <li key={s.server} className="flex items-center gap-2 text-sm">
+              <span
+                aria-hidden="true"
+                className="size-2.5 shrink-0 rounded-full"
+                style={{ background: segmentColor(i) }}
+              />
+              <span className="flex-1 truncate font-mono">{s.server}</span>
+              <span className="font-mono tabular-nums text-muted-foreground">
+                {s.count} · {Math.round(s.sharePct)}%
+              </span>
+            </li>
+          ))}
+        </ul>
+      </ScrollArea>
     </div>
   )
 }
@@ -271,10 +274,19 @@ export function SkillMcpLeaderboards() {
         <WindowSelector value={window} onChange={setWindow} />
       </div>
 
+      {query.isPending && !query.isError && (
+        <div className="space-y-2">
+          {[...Array(5)].map((_, i) => (
+            <Skeleton key={i} className="h-8 w-full" />
+          ))}
+        </div>
+      )}
+
       {query.isError && (
-        <p role="alert" className="font-mono text-sm text-status-failed">
-          Failed to load usage history: {(query.error as Error).message}
-        </p>
+        <Alert variant="destructive" role="alert">
+          <AlertTitle>Failed to load usage history</AlertTitle>
+          <AlertDescription>{(query.error as Error).message}</AlertDescription>
+        </Alert>
       )}
 
       <Card>
