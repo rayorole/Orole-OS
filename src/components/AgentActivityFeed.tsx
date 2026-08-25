@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Activity, AlertCircle, CheckCircle2, Loader2, RadioTower } from 'lucide-react'
+import { Activity, RadioTower } from 'lucide-react'
 
 import { Badge } from '#/components/ui/badge'
 import {
@@ -9,6 +9,14 @@ import {
   CardHeader,
   CardTitle,
 } from '#/components/ui/card'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '#/components/ui/collapsible'
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '#/components/ui/empty'
+import { ScrollArea } from '#/components/ui/scroll-area'
+import { Spinner } from '#/components/ui/spinner'
 import { activityFeed, useActivityFeed, type RunRecord } from '#/lib/activity-feed'
 import { KillSwitchButtons, useRunControl } from '#/components/KillSwitch'
 
@@ -23,18 +31,21 @@ function formatElapsed(record: RunRecord, now: number): string {
   return `${Math.floor(secs / 60)}m ${secs % 60}s`
 }
 
+function statusVariant(status: RunRecord['status']): 'running' | 'failed' | 'pending' | 'idle' {
+  if (status === 'failed') return 'failed'
+  if (status === 'completed') return 'running'
+  return 'pending'
+}
+
 function StatusGlyph({ status }: { status: RunRecord['status'] }) {
   if (status === 'failed')
-    return <AlertCircle className="size-4 shrink-0 text-red-400" aria-label="failed" />
+    return <Badge variant="failed" aria-label="failed">✕</Badge>
   if (status === 'completed')
-    return (
-      <CheckCircle2 className="size-4 shrink-0 text-emerald-400" aria-label="completed" />
-    )
+    return <Badge variant="running" aria-label="completed">✓</Badge>
   return (
-    <Loader2
-      className="size-4 shrink-0 animate-spin text-neon-cyan"
-      aria-label="running"
-    />
+    <span className="flex shrink-0 items-center" aria-label="running">
+      <Spinner className="size-4 text-neon-cyan" />
+    </span>
   )
 }
 
@@ -45,48 +56,42 @@ function RunEntry({ record, now }: { record: RunRecord; now: number }) {
   const actionable = record.status === 'running'
 
   return (
-    <li>
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
+    <li className={failed ? '[&_[data-slot=collapsible]]:border-status-failed/30' : undefined}>
+      <Collapsible
+        open={open}
+        onOpenChange={setOpen}
+        data-slot="collapsible"
         className={`w-full rounded-md border px-3 py-2 text-left transition-colors ${
           failed
             ? 'border-red-500/30 bg-red-500/5 hover:bg-red-500/10'
             : 'border-border/50 hover:border-neon-cyan/30 hover:bg-neon-cyan/5'
         }`}
       >
-        <div className="flex items-center gap-2">
-          <StatusGlyph status={record.status} />
-          <span className="min-w-0 flex-1 truncate font-mono text-sm">
-            {record.summary}
-          </span>
-          <span className="font-mono text-xs text-muted-foreground">
-            {formatElapsed(record, now)}
-          </span>
-        </div>
-        <div className="mt-0.5 flex items-center gap-2 pl-6 font-mono text-[11px] text-muted-foreground">
-          <span>{formatTime(record.startedAt)}</span>
-          <Badge
-            className={
-              failed
-                ? 'border-red-500/40 text-red-300'
-                : record.status === 'completed'
-                  ? 'border-emerald-500/40 text-emerald-300'
-                  : 'border-neon-cyan/40 text-neon-cyan'
-            }
-          >
-            {record.status}
-          </Badge>
-          <a
-            href={`/runs/${record.id}`}
-            onClick={(e) => e.stopPropagation()}
-            className="ml-auto hover:text-neon-cyan"
-          >
-            trace →
-          </a>
-        </div>
-        {open && (
+        <CollapsibleTrigger asChild>
+          <button type="button" aria-expanded={open} className="w-full text-left">
+            <div className="flex items-center gap-2">
+              <StatusGlyph status={record.status} />
+              <span className="min-w-0 flex-1 truncate font-mono text-sm">
+                {record.summary}
+              </span>
+              <span className="font-mono text-xs text-muted-foreground">
+                {formatElapsed(record, now)}
+              </span>
+            </div>
+            <div className="mt-0.5 flex items-center gap-2 pl-6 font-mono text-[11px] text-muted-foreground">
+              <span>{formatTime(record.startedAt)}</span>
+              <Badge variant={statusVariant(record.status)}>{record.status}</Badge>
+              <a
+                href={`/runs/${record.id}`}
+                onClick={(e) => e.stopPropagation()}
+                className="ml-auto hover:text-neon-cyan"
+              >
+                trace →
+              </a>
+            </div>
+          </button>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
           <div className="mt-2 space-y-1 border-t border-border/40 pt-2 pl-6 text-xs">
             {record.input && (
               <p className="text-muted-foreground">
@@ -126,8 +131,8 @@ function RunEntry({ record, now }: { record: RunRecord; now: number }) {
               </div>
             )}
           </div>
-        )}
-      </button>
+        </CollapsibleContent>
+      </Collapsible>
     </li>
   )
 }
@@ -148,14 +153,13 @@ export function AgentActivityFeed() {
           <CardTitle className="flex items-center gap-2 font-mono text-sm uppercase tracking-widest text-neon-cyan">
             <RadioTower className="size-4" /> Agent Activity
           </CardTitle>
-          <span
+          <Badge
+            variant={connection === 'connected' ? 'running' : 'pending'}
+            className="font-mono text-[11px]"
             aria-live="polite"
-            className={`font-mono text-[11px] ${
-              connection === 'connected' ? 'text-emerald-400' : 'text-amber-400'
-            }`}
           >
             {connection === 'connected' ? '● live' : '◌ reconnecting…'}
-          </span>
+          </Badge>
         </div>
         <CardDescription>
           Live Hermes run stream — newest first.
@@ -163,18 +167,27 @@ export function AgentActivityFeed() {
       </CardHeader>
       <CardContent>
         {runs.length === 0 ? (
-          <div className="flex flex-col items-center gap-2 py-8 text-muted-foreground">
-            <Activity className="size-6 opacity-50" />
-            <p className="font-mono text-xs uppercase tracking-widest">
-              no agent runs yet — standing by
-            </p>
-          </div>
+          <Empty className="border-border py-8">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <Activity />
+              </EmptyMedia>
+              <EmptyTitle className="font-mono text-xs uppercase tracking-widest">
+                no agent runs yet — standing by
+              </EmptyTitle>
+              <EmptyDescription>
+                Agent runs will stream here as they start.
+              </EmptyDescription>
+            </EmptyHeader>
+          </Empty>
         ) : (
-          <ul className="max-h-96 space-y-1.5 overflow-y-auto pr-1">
-            {runs.map((record) => (
-              <RunEntry key={record.id} record={record} now={now} />
-            ))}
-          </ul>
+          <ScrollArea className="max-h-96 pr-2">
+            <ul className="space-y-1.5 pr-2">
+              {runs.map((record) => (
+                <RunEntry key={record.id} record={record} now={now} />
+              ))}
+            </ul>
+          </ScrollArea>
         )}
       </CardContent>
     </Card>

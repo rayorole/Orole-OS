@@ -5,6 +5,7 @@ import { ArrowLeft } from 'lucide-react'
 import { KillSwitchButtons, useRunControl } from '#/components/KillSwitch'
 import { RunTraceInspector } from '#/components/RunTraceInspector'
 import type { RawRunStep } from '#/lib/run-trace'
+import { Alert, AlertDescription, AlertTitle } from '#/components/ui/alert'
 import { Badge } from '#/components/ui/badge'
 import {
   Card,
@@ -13,6 +14,8 @@ import {
   CardHeader,
   CardTitle,
 } from '#/components/ui/card'
+import { ScrollArea } from '#/components/ui/scroll-area'
+import { Skeleton } from '#/components/ui/skeleton'
 import { runsApiBase, HERMES_API_KEY } from '#/lib/run-control'
 
 export const Route = createFileRoute('/runs/$runId')({
@@ -35,6 +38,12 @@ async function fetchRun(runId: string): Promise<ApiRunDetail> {
   })
   if (!res.ok) throw new Error(`fetch run failed: HTTP ${res.status}`)
   return (await res.json()) as ApiRunDetail
+}
+
+function statusVariant(status: string): 'running' | 'failed' | 'pending' | 'idle' {
+  if (status === 'failed' || status === 'cancelled') return 'failed'
+  if (status === 'completed' || status === 'paused') return 'running'
+  return 'pending'
 }
 
 function RunDetail() {
@@ -92,17 +101,7 @@ function RunDetail() {
               Run {runId}
             </CardTitle>
             <div className="flex min-h-8 items-center gap-3">
-              <Badge
-                className={
-                  status === 'failed' || status === 'cancelled'
-                    ? 'border-red-500/40 text-red-300'
-                    : status === 'completed' || status === 'paused'
-                      ? 'border-emerald-500/40 text-emerald-300'
-                      : 'border-neon-cyan/40 text-neon-cyan'
-                }
-              >
-                {status}
-              </Badge>
+              <Badge variant={statusVariant(status)}>{status}</Badge>
               {actionable && (
                 <KillSwitchButtons
                   runId={runId}
@@ -112,7 +111,13 @@ function RunDetail() {
               )}
             </div>
           </div>
-          <CardDescription>{run?.summary ?? (loadError ? '—' : 'loading…')}</CardDescription>
+          {run?.summary ? (
+            <CardDescription>{run.summary}</CardDescription>
+          ) : loadError ? (
+            <CardDescription>—</CardDescription>
+          ) : (
+            <Skeleton className="h-4 w-2/3" />
+          )}
         </CardHeader>
         <CardContent className="space-y-4">
           {(control.state.phase === 'confirm' || control.state.phase === 'pending') &&
@@ -126,26 +131,42 @@ function RunDetail() {
           {control.state.phase === 'error' && (
             <KillSwitchButtons runId={runId} control={control} />
           )}
+          {!run && !loadError && (
+            <div className="space-y-2">
+              <Skeleton className="h-3 w-full" />
+              <Skeleton className="h-3 w-4/5" />
+            </div>
+          )}
           {loadError && (
-            <p role="alert" className="font-mono text-xs text-red-400">
-              {loadError}
-            </p>
+            <Alert variant="destructive">
+              <AlertTitle>{loadError}</AlertTitle>
+              <AlertDescription>
+                Could not load run details — the API may be unreachable.
+              </AlertDescription>
+            </Alert>
           )}
           {run?.input && (
             <div>
               <p className="mb-1 font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
                 exact final prompt as sent
               </p>
-              <pre
-                data-testid="final-prompt"
-                className="max-h-40 overflow-auto whitespace-pre-wrap break-words rounded bg-black/40 p-2 text-[11px]"
-              >
-                {run.input}
-              </pre>
+              <ScrollArea className="max-h-40 rounded-md border border-border bg-muted/40">
+                <pre
+                  data-testid="final-prompt"
+                  className="whitespace-pre-wrap break-words p-3 text-[11px]"
+                >
+                  {run.input}
+                </pre>
+              </ScrollArea>
             </div>
           )}
           {run?.error && (
-            <p className="font-mono text-xs text-red-300">error: {run.error}</p>
+            <Alert variant="destructive" className="border-destructive/40 bg-destructive/10">
+              <AlertTitle>error</AlertTitle>
+              <AlertDescription className="font-mono text-xs">
+                {run.error}
+              </AlertDescription>
+            </Alert>
           )}
           <div>
             <p className="mb-1 font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
