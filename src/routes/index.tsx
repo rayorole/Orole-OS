@@ -2,6 +2,8 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 
 import { AgentActivityFeed } from '#/components/AgentActivityFeed'
+import { FailureTriage } from '#/components/FailureTriage'
+import { useActivityFeed } from '#/lib/activity-feed'
 import { Button } from '#/components/ui/button'
 import {
   Card,
@@ -14,6 +16,12 @@ import {
 export const Route = createFileRoute('/')({
   component: Home,
 })
+
+/** Failure triage fed from the shared activity-feed store. */
+function AgentActivityFeedWithTriage() {
+  const { runs } = useActivityFeed()
+  return <FailureTriage runs={runs} onOpenRun={(id) => (window.location.href = `/runs/${id}`)} />
+}
 
 function SystemStatus() {
   // Demonstrates TanStack Query wiring end-to-end.
@@ -45,6 +53,7 @@ function Home() {
       </div>
 
       <AgentActivityFeed />
+      <AgentActivityFeedWithTriage />
 
       <Card className="w-full border-neon-cyan/20 shadow-[0_0_32px_var(--grid-glow)]">
         <CardHeader>

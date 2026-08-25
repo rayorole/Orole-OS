@@ -9,7 +9,8 @@ import {
   CardHeader,
   CardTitle,
 } from '#/components/ui/card'
-import { useActivityFeed, type RunRecord } from '#/lib/activity-feed'
+import { activityFeed, useActivityFeed, type RunRecord } from '#/lib/activity-feed'
+import { KillSwitchButtons, useRunControl } from '#/components/KillSwitch'
 
 function formatTime(ms: number): string {
   return new Date(ms).toLocaleTimeString()
@@ -40,6 +41,8 @@ function StatusGlyph({ status }: { status: RunRecord['status'] }) {
 function RunEntry({ record, now }: { record: RunRecord; now: number }) {
   const [open, setOpen] = useState(false)
   const failed = record.status === 'failed'
+  const control = useRunControl()
+  const actionable = record.status === 'running'
 
   return (
     <li>
@@ -75,6 +78,13 @@ function RunEntry({ record, now }: { record: RunRecord; now: number }) {
           >
             {record.status}
           </Badge>
+          <a
+            href={`/runs/${record.id}`}
+            onClick={(e) => e.stopPropagation()}
+            className="ml-auto hover:text-neon-cyan"
+          >
+            trace →
+          </a>
         </div>
         {open && (
           <div className="mt-2 space-y-1 border-t border-border/40 pt-2 pl-6 text-xs">
@@ -91,6 +101,29 @@ function RunEntry({ record, now }: { record: RunRecord; now: number }) {
             )}
             {!record.error && failed && (
               <p className="text-red-300 font-mono">error: (no detail provided)</p>
+            )}
+            {actionable && (
+              <div className="pt-1">
+                <KillSwitchButtons
+                  runId={record.id}
+                  control={control}
+                  onExecute={(id) =>
+                    control.execute(id, () => {
+                      // Optimistic: mark cancelled/paused locally; SSE truth re-syncs.
+                      const action = control.state.action
+                      activityFeed.upsert({
+                        ...record,
+                        status: action === 'pause' ? 'completed' : 'completed',
+                        endedAt: record.endedAt ?? Date.now(),
+                        summary:
+                          action === 'pause'
+                            ? `${record.summary} (paused)`
+                            : `${record.summary} (cancelling…)`,
+                      })
+                    })
+                  }
+                />
+              </div>
             )}
           </div>
         )}
