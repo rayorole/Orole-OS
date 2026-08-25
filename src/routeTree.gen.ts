@@ -10,14 +10,18 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+<<<<<<< HEAD
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as SettingsRouteImport } from './routes/settings'
+=======
+>>>>>>> 8ef481b (feat(ui): dark HUD design system, purge TanStack starter boilerplate)
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+<<<<<<< HEAD
 const AboutRoute = AboutRouteImport.update({
   id: '/about',
   path: '/about',
@@ -38,10 +42,19 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/settings': typeof SettingsRoute
+=======
+
+export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
+}
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+>>>>>>> 8ef481b (feat(ui): dark HUD design system, purge TanStack starter boilerplate)
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+<<<<<<< HEAD
   '/about': typeof AboutRoute
   '/settings': typeof SettingsRoute
 }
@@ -51,12 +64,24 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to: '/' | '/about' | '/settings'
   id: '__root__' | '/' | '/about' | '/settings'
+=======
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths: '/'
+  fileRoutesByTo: FileRoutesByTo
+  to: '/'
+  id: '__root__' | '/'
+>>>>>>> 8ef481b (feat(ui): dark HUD design system, purge TanStack starter boilerplate)
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+<<<<<<< HEAD
   AboutRoute: typeof AboutRoute
   SettingsRoute: typeof SettingsRoute
+=======
+>>>>>>> 8ef481b (feat(ui): dark HUD design system, purge TanStack starter boilerplate)
 }
 
 declare module '@tanstack/react-router' {
@@ -68,6 +93,7 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+<<<<<<< HEAD
     '/about': {
       id: '/about'
       path: '/about'
@@ -82,13 +108,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+=======
+>>>>>>> 8ef481b (feat(ui): dark HUD design system, purge TanStack starter boilerplate)
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+<<<<<<< HEAD
   AboutRoute: AboutRoute,
   SettingsRoute: SettingsRoute,
+=======
+>>>>>>> 8ef481b (feat(ui): dark HUD design system, purge TanStack starter boilerplate)
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
