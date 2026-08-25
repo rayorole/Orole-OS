@@ -82,14 +82,63 @@ function cookieHeaders(s) {
   ];
 }
 
+// Normalize Vercel's Node-style (req,res) args into a Web Request.
+function toWebRequest(req, res) {
+  if (typeof req.headers?.get === "function") return req; // already Web Request
+  const headers = new Headers();
+  for (const [k, v] of Object.entries(req.headers ?? {})) {
+    headers.set(k, Array.isArray(v) ? v.join(", ") : String(v));
+  }
+  const url = `https://${req.headers.host ?? "localhost"}${req.url ?? "/"}`;
+  return new Request(url, {
+    method: req.method,
+    headers,
+    body: ["GET", "HEAD"].includes(req.method) ? undefined : req,
+    // @ts-expect-error duplex
+    duplex: "half",
+  });
+}
+
+function sendWeb(res, webResponse) {
+  for (const [k, v] of webResponse.headers) {
+    if (k === "set-cookie") res.setHeader("set-cookie", webResponse.headers.getSetCookie?.() ?? [v]);
+    else res.setHeader(k, v);
+  }
+  res.statusCode = webResponse.status;
+  if (webResponse.body) {
+    void webResponse.body.pipeTo(new WritableStream({
+      write(c) { res.write(Buffer.from(c)); },
+      close() { res.end(); },
+      abort() { res.end(); },
+    }));
+  } else {
+    res.end();
+  }
+}
+
 
 export const config = { runtime: "nodejs" };
 
-export default async function handler(req) {
+export default async function handler(req, res) {
+  const request = toWebRequest(req, res);
   try {
-    const url = new URL(req.url);
-    let session = authorize(req);
-    const auth = req.headers.get("authorization");
+    const response = await handle(request);
+    if (res && typeof res.setHeader === "function") {
+      sendWeb(res, response);
+      return;
+    }
+    return response;
+  } catch (err) {
+    console.error("[api]", err);
+    const fail = json({ error: "Internal error" }, 500);
+    if (res && typeof res.setHeader === "function") { sendWeb(res, fail); return; }
+    return fail;
+  }
+
+  async function handle(request) {
+    const url = new URL(request.url);
+let session = authorize(request);
+    const auth = request.headers.get("authorization");
     if (!session && auth?.startsWith("Bearer ")) {
       const raw = auth.slice(7).trim();
       const entry = streamTokens.get(raw);
@@ -108,18 +157,17 @@ export default async function handler(req) {
 
     const headers = new Headers();
     headers.set("Authorization", `Bearer ${key}`);
-    headers.set("accept", req.headers.get("accept") ?? "application/json");
-    const ct = req.headers.get("content-type");
+    headers.set("accept", request.headers.get("accept") ?? "application/json");
+    const ct = request.headers.get("content-type");
     if (ct) headers.set("content-type", ct);
 
     return await fetch(target, {
-      method: req.method,
+      method: request.method,
       headers,
-      body: req.method === "GET" || req.method === "HEAD"
+      body: request.method === "GET" || request.method === "HEAD"
         ? undefined
-        : await req.arrayBuffer(),
+        : await request.arrayBuffer(),
     }).catch(() => json({ error: "Gateway unreachable" }, 502));
-  } catch (err) {
-    return json({ error: "Internal error", detail: String(err?.message ?? err) }, 500);
   }
 }
+

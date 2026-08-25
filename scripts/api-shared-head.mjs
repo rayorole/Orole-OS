@@ -81,3 +81,37 @@ function cookieHeaders(s) {
     `${CSRF_COOKIE}=${s.csrfToken}; Path=/; SameSite=Lax; Secure`,
   ];
 }
+
+// Normalize Vercel's Node-style (req,res) args into a Web Request.
+function toWebRequest(req, res) {
+  if (typeof req.headers?.get === "function") return req; // already Web Request
+  const headers = new Headers();
+  for (const [k, v] of Object.entries(req.headers ?? {})) {
+    headers.set(k, Array.isArray(v) ? v.join(", ") : String(v));
+  }
+  const url = `https://${req.headers.host ?? "localhost"}${req.url ?? "/"}`;
+  return new Request(url, {
+    method: req.method,
+    headers,
+    body: ["GET", "HEAD"].includes(req.method) ? undefined : req,
+    // @ts-expect-error duplex
+    duplex: "half",
+  });
+}
+
+function sendWeb(res, webResponse) {
+  for (const [k, v] of webResponse.headers) {
+    if (k === "set-cookie") res.setHeader("set-cookie", webResponse.headers.getSetCookie?.() ?? [v]);
+    else res.setHeader(k, v);
+  }
+  res.statusCode = webResponse.status;
+  if (webResponse.body) {
+    void webResponse.body.pipeTo(new WritableStream({
+      write(c) { res.write(Buffer.from(c)); },
+      close() { res.end(); },
+      abort() { res.end(); },
+    }));
+  } else {
+    res.end();
+  }
+}

@@ -82,26 +82,78 @@ function cookieHeaders(s) {
   ];
 }
 
+// Normalize Vercel's Node-style (req,res) args into a Web Request.
+function toWebRequest(req, res) {
+  if (typeof req.headers?.get === "function") return req; // already Web Request
+  const headers = new Headers();
+  for (const [k, v] of Object.entries(req.headers ?? {})) {
+    headers.set(k, Array.isArray(v) ? v.join(", ") : String(v));
+  }
+  const url = `https://${req.headers.host ?? "localhost"}${req.url ?? "/"}`;
+  return new Request(url, {
+    method: req.method,
+    headers,
+    body: ["GET", "HEAD"].includes(req.method) ? undefined : req,
+    // @ts-expect-error duplex
+    duplex: "half",
+  });
+}
+
+function sendWeb(res, webResponse) {
+  for (const [k, v] of webResponse.headers) {
+    if (k === "set-cookie") res.setHeader("set-cookie", webResponse.headers.getSetCookie?.() ?? [v]);
+    else res.setHeader(k, v);
+  }
+  res.statusCode = webResponse.status;
+  if (webResponse.body) {
+    void webResponse.body.pipeTo(new WritableStream({
+      write(c) { res.write(Buffer.from(c)); },
+      close() { res.end(); },
+      abort() { res.end(); },
+    }));
+  } else {
+    res.end();
+  }
+}
+
 
 export const config = { runtime: "nodejs" };
 
-export default async function handler(req) {
-  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
-  if (authorize(req)) return json({ ok: true, alreadyAuthenticated: true }, 200);
-
-  const body = await req.json().catch(() => null);
-  const key = body?.apiKey?.trim();
-  if (!key || key.length < 8 || key.length > 512) {
-    return json({ error: "A valid gateway API key is required" }, 400);
+export default async function handler(req, res) {
+  const request = toWebRequest(req, res);
+  try {
+    const response = await handle(request);
+    if (res && typeof res.setHeader === "function") {
+      sendWeb(res, response);
+      return;
+    }
+    return response;
+  } catch (err) {
+    console.error("[api]", err);
+    const fail = json({ error: "Internal error" }, 500);
+    if (res && typeof res.setHeader === "function") { sendWeb(res, fail); return; }
+    return fail;
   }
-  if (!(await verifyGatewayKey(key))) {
-    return json({ error: "The gateway rejected this key" }, 401);
+
+  async function handle(request) {
+if (request.method !== "POST") return json({ error: "Method not allowed" }, 405);
+    if (authorize(request)) return json({ ok: true, alreadyAuthenticated: true }, 200);
+
+    const body = await request.json().catch(() => null);
+    const key = body?.apiKey?.trim();
+    if (!key || key.length < 8 || key.length > 512) {
+      return json({ error: "A valid gateway API key is required" }, 400);
+    }
+    if (!(await verifyGatewayKey(key))) {
+      return json({ error: "The gateway rejected this key" }, 401);
+    }
+
+    const session = createSession();
+    keyRing.set(session.id, key);
+
+    const headers = new Headers({ "content-type": "application/json" });
+    for (const c of cookieHeaders(session)) headers.append("set-cookie", c);
+    return new Response(JSON.stringify({ ok: true }), { status: 200, headers });
   }
-
-  const session = createSession();
-  keyRing.set(session.id, key);
-
-  const headers = new Headers({ "content-type": "application/json" });
-  for (const c of cookieHeaders(session)) headers.append("set-cookie", c);
-  return new Response(JSON.stringify({ ok: true }), { status: 200, headers });
 }
+
