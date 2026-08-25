@@ -9,6 +9,11 @@ import {
   CardHeader,
   CardTitle,
 } from '#/components/ui/card'
+import { Input } from '#/components/ui/input'
+import { Label } from '#/components/ui/label'
+import { Switch } from '#/components/ui/switch'
+import { Badge } from '#/components/ui/badge'
+import { Spinner } from '#/components/ui/spinner'
 import { purgeLegacyStoredKey } from '#/lib/api-config'
 import {
   checkSession,
@@ -27,14 +32,17 @@ type TestState =
   | { kind: 'testing' }
   | { kind: 'done'; status: string; detail: string }
 
-const STATUS_META: Record<string, { label: string; tone: string }> = {
-  idle: { label: 'Not tested', tone: 'text-muted-foreground' },
-  testing: { label: 'Testing…', tone: 'text-neon-violet animate-pulse' },
-  connected: { label: 'Connected', tone: 'text-neon-cyan' },
-  unauthorized: { label: 'Rejected', tone: 'text-destructive' },
-  'network-error': { label: 'Network error', tone: 'text-destructive' },
-  'server-error': { label: 'Backend error', tone: 'text-amber-400' },
-  'no-session': { label: 'Not signed in', tone: 'text-destructive' },
+const STATUS_META: Record<
+  string,
+  { label: string; variant: 'idle' | 'pending' | 'running' | 'failed' | 'outline' }
+> = {
+  idle: { label: 'Not tested', variant: 'idle' },
+  testing: { label: 'Testing…', variant: 'pending' },
+  connected: { label: 'Connected', variant: 'running' },
+  unauthorized: { label: 'Rejected', variant: 'failed' },
+  'network-error': { label: 'Network error', variant: 'failed' },
+  'server-error': { label: 'Backend error', variant: 'pending' },
+  'no-session': { label: 'Not signed in', variant: 'failed' },
 }
 
 function Settings() {
@@ -137,30 +145,34 @@ function Settings() {
           </CardHeader>
           <CardContent>
             <form className="flex flex-col gap-4" onSubmit={handleLogin}>
-              <label className="flex flex-col gap-1.5">
-                <span className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
+              <div className="flex flex-col gap-1.5">
+                <Label
+                  htmlFor="gateway-api-key"
+                  className="font-mono text-xs uppercase tracking-wider text-muted-foreground"
+                >
                   Gateway API key
-                </span>
-                <span className="flex gap-2">
-                  <input
+                </Label>
+                <div className="flex items-center gap-3">
+                  <Input
+                    id="gateway-api-key"
                     type={showKey ? 'text' : 'password'}
                     value={apiKey}
                     onChange={(e) => setApiKey(e.target.value)}
                     placeholder="sk-…"
                     autoComplete="off"
                     spellCheck={false}
-                    className="w-full rounded-md border border-input bg-transparent px-3 py-2 font-mono text-sm outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                    className="w-full font-mono"
                   />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setShowKey((v) => !v)}
-                    aria-label={showKey ? 'Hide key' : 'Show key'}
-                  >
+                  <Label className="flex shrink-0 items-center gap-2 font-mono text-xs uppercase tracking-wider text-muted-foreground">
+                    <Switch
+                      checked={showKey}
+                      onCheckedChange={setShowKey}
+                      aria-label={showKey ? 'Hide key' : 'Show key'}
+                    />
                     {showKey ? 'Hide' : 'Show'}
-                  </Button>
-                </span>
-              </label>
+                  </Label>
+                </div>
+              </div>
 
               {error && (
                 <p role="alert" className="text-sm text-destructive">
@@ -169,7 +181,8 @@ function Settings() {
               )}
 
               <div className="flex items-center gap-2">
-                <Button type="submit" disabled={busy}>
+                <Button type="submit" disabled={busy} className="gap-2">
+                  {busy && <Spinner className="size-4" />}
                   {busy ? 'Signing in…' : 'Sign in'}
                 </Button>
               </div>
@@ -183,7 +196,9 @@ function Settings() {
           role="status"
           className="flex items-center gap-2 rounded-md border border-[var(--line)] px-3 py-2 text-sm"
         >
-          <span className={`font-mono font-semibold ${meta.tone}`}>{meta.label}</span>
+          <Badge variant={meta.variant} className="font-mono font-semibold">
+            {meta.label}
+          </Badge>
           {test.kind === 'done' && (
             <span className="text-muted-foreground">{test.detail}</span>
           )}

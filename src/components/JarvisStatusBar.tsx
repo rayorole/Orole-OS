@@ -11,17 +11,14 @@ import {
   useFleetStatus,
 } from '../hooks/useFleetStatus'
 import { useJarvisAnnouncer } from '../hooks/useJarvisAnnouncer'
-
-function Skeleton() {
-  return (
-    <div className="flex animate-pulse items-center gap-3 font-mono text-xs text-muted-foreground">
-      <span className="h-3 w-28 rounded bg-muted" />
-      <span className="h-3 w-24 rounded bg-muted" />
-      <span className="h-3 w-20 rounded bg-muted" />
-      <span className="sr-only">Loading fleet status</span>
-    </div>
-  )
-}
+import { Badge } from '#/components/ui/badge'
+import { Skeleton } from '#/components/ui/skeleton'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '#/components/ui/tooltip'
 
 export function JarvisStatusBar() {
   const status = useFleetStatus()
@@ -59,74 +56,88 @@ export function JarvisStatusBar() {
   ]
 
   return (
-    <footer
-      role="status"
-      aria-live="polite"
-      aria-label="Fleet status"
-      data-stale={status.stale || undefined}
-      className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/75"
-    >
-      <div className="mx-auto flex h-10 max-w-screen-2xl items-center gap-4 px-4">
-        <span
-          aria-hidden="true"
-          className={
-            status.loading
-              ? 'size-2 shrink-0 rounded-full bg-muted-foreground'
-              : status.stale
-                ? 'size-2 shrink-0 animate-pulse rounded-full bg-destructive shadow-[0_0_8px_var(--destructive)]'
-                : 'size-2 shrink-0 rounded-full bg-primary shadow-[0_0_8px_var(--neon-cyan)]'
-          }
-        />
-        {status.loading ? (
-          <Skeleton />
-        ) : (
-          <nav
-            aria-label="Status segments"
-            className="flex min-w-0 items-center gap-4 overflow-x-auto font-mono text-xs"
-          >
-            {segments.map((segment) => (
-              <Link
-                key={segment.to}
-                to={segment.to}
-                className="group flex shrink-0 items-center gap-1.5 whitespace-nowrap text-muted-foreground transition-colors hover:text-primary focus-visible:text-primary"
+    <TooltipProvider>
+      <footer
+        role="status"
+        aria-live="polite"
+        aria-label="Fleet status"
+        data-stale={status.stale || undefined}
+        className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/75"
+      >
+        <div className="mx-auto flex h-10 max-w-screen-2xl items-center gap-4 px-4">
+          <span
+            aria-hidden="true"
+            className={
+              status.loading
+                ? 'size-2 shrink-0 rounded-full bg-muted-foreground'
+                : status.stale
+                  ? 'size-2 shrink-0 animate-pulse rounded-full bg-destructive shadow-[0_0_8px_var(--destructive)]'
+                  : 'size-2 shrink-0 rounded-full bg-primary shadow-[0_0_8px_var(--neon-cyan)]'
+            }
+          />
+          {status.loading ? (
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-3 w-28" />
+              <Skeleton className="h-3 w-24" />
+              <Skeleton className="h-3 w-20" />
+              <span className="sr-only">Loading fleet status</span>
+            </div>
+          ) : (
+            <nav
+              aria-label="Status segments"
+              className="flex min-w-0 items-center gap-4 overflow-x-auto font-mono text-xs"
+            >
+              {segments.map((segment) => (
+                <Link
+                  key={segment.to}
+                  to={segment.to}
+                  className="group flex shrink-0 items-center gap-1.5 whitespace-nowrap text-muted-foreground transition-colors hover:text-primary focus-visible:text-primary"
+                >
+                  <Badge
+                    variant="outline"
+                    className="tabular-nums text-neon-cyan group-hover:text-primary group-focus-visible:text-primary"
+                  >
+                    {segment.count}
+                  </Badge>
+                  {segment.label}
+                </Link>
+              ))}
+            </nav>
+          )}
+          {status.stale && (
+            <Badge variant="destructive" className="ml-auto shrink-0 font-mono text-[10px] uppercase tracking-widest">
+              stale · reconnecting
+            </Badge>
+          )}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={enabled ? handleManualAnnounce : toggle}
+                onDoubleClick={toggle}
+                aria-pressed={enabled}
+                aria-label={
+                  enabled
+                    ? 'Mute Jarvis status announcements'
+                    : speaking
+                      ? 'Jarvis is announcing status'
+                      : 'Enable Jarvis status announcements'
+                }
+                className="ml-auto flex size-7 shrink-0 items-center justify-center rounded-md border border-transparent text-muted-foreground transition-colors hover:border-border hover:text-primary focus-visible:border-ring focus-visible:outline-none disabled:opacity-50"
+                disabled={status.loading}
               >
-                <span className="tabular-nums text-neon-cyan group-hover:text-primary group-focus-visible:text-primary">
-                  {segment.count}
-                </span>
-                {segment.label}
-              </Link>
-            ))}
-          </nav>
-        )}
-        {status.stale && (
-          <span className="ml-auto shrink-0 font-mono text-[10px] uppercase tracking-widest text-destructive">
-            stale · reconnecting
-          </span>
-        )}
-        <button
-          type="button"
-          onClick={enabled ? handleManualAnnounce : toggle}
-          onDoubleClick={toggle}
-          aria-pressed={enabled}
-          aria-label={
-            enabled
-              ? 'Mute Jarvis status announcements'
-              : speaking
-                ? 'Jarvis is announcing status'
-                : 'Enable Jarvis status announcements'
-          }
-          title={
-            enabled
-              ? 'Announce now (double-click to mute)'
-              : 'Enable Jarvis voice announcements'
-          }
-          className="ml-auto flex size-7 shrink-0 items-center justify-center rounded-md border border-transparent text-muted-foreground transition-colors hover:border-border hover:text-primary focus-visible:border-ring focus-visible:outline-none disabled:opacity-50"
-          disabled={status.loading}
-        >
-          {enabled ? <Volume2 className="size-4" /> : <VolumeX className="size-4" />}
-        </button>
-      </div>
-    </footer>
+                {enabled ? <Volume2 className="size-4" /> : <VolumeX className="size-4" />}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>
+              {enabled
+                ? 'Announce now (double-click to mute)'
+                : 'Enable Jarvis voice announcements'}
+            </TooltipContent>
+          </Tooltip>
+        </div>
+      </footer>
+    </TooltipProvider>
   )
 }
 
