@@ -10,7 +10,9 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as PuppetRouteImport } from './routes/puppet'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as TranscriptRouteImport } from './routes/transcript'
 
 const IndexRoute = IndexRouteImport.update({
@@ -18,9 +20,19 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PuppetRoute = PuppetRouteImport.update({
   id: '/puppet',
   path: '/puppet',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TranscriptRoute = TranscriptRouteImport.update({
@@ -31,31 +43,39 @@ const TranscriptRoute = TranscriptRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/dashboard': typeof DashboardRoute
   '/puppet': typeof PuppetRoute
+  '/settings': typeof SettingsRoute
   '/transcript': typeof TranscriptRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/dashboard': typeof DashboardRoute
   '/puppet': typeof PuppetRoute
+  '/settings': typeof SettingsRoute
   '/transcript': typeof TranscriptRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/dashboard': typeof DashboardRoute
   '/puppet': typeof PuppetRoute
+  '/settings': typeof SettingsRoute
   '/transcript': typeof TranscriptRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/puppet' | '/transcript'
+  fullPaths: '/' | '/dashboard' | '/puppet' | '/settings' | '/transcript'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/puppet' | '/transcript'
-  id: '__root__' | '/' | '/puppet' | '/transcript'
+  to: '/' | '/dashboard' | '/puppet' | '/settings' | '/transcript'
+  id: '__root__' | '/' | '/dashboard' | '/puppet' | '/settings' | '/transcript'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DashboardRoute: typeof DashboardRoute
   PuppetRoute: typeof PuppetRoute
+  SettingsRoute: typeof SettingsRoute
   TranscriptRoute: typeof TranscriptRoute
 }
 
@@ -68,11 +88,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/puppet': {
       id: '/puppet'
       path: '/puppet'
       fullPath: '/puppet'
       preLoaderRoute: typeof PuppetRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/transcript': {
@@ -87,18 +121,11 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DashboardRoute: DashboardRoute,
   PuppetRoute: PuppetRoute,
+  SettingsRoute: SettingsRoute,
   TranscriptRoute: TranscriptRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}
