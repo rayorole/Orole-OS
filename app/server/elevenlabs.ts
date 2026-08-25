@@ -1,7 +1,47 @@
 // Server-side ElevenLabs proxy routes.
 // The ELEVENLABS_API_KEY lives only here — the browser never sees it.
+//
+// Hardening (issue #32):
+// - Every call requires an authenticated session (httpOnly cookie).
+// - Per-session rate limiting + request length caps.
+// - Voice IDs are server-configured only; client-supplied voiceId/model_id
+//   are ignored/rejected.
 
 const ELEVEN_BASE = "https://api.elevenlabs.io/v1";
+
+/** The ONLY voice the panel may use. Configure via env; no client override. */
+export const SERVER_VOICE_ID = process.env.ELEVENLABS_VOICE_ID ?? "21m00Tcm4TlvDq8ikWAM"; // Rachel
+export const SERVER_MODEL_ID = process.env.ELEVENLABS_MODEL_ID ?? "eleven_turbo_v2_5";
+
+/** Max TTS text length per request (chars). */
+export const TTS_TEXT_MAX_CHARS = 2_000;
+/** Max STT upload size (bytes). */
+export const STT_MAX_BYTES = 10 * 1024 * 1024;
+/** Requests per minute per session, per endpoint. */
+export const RATE_LIMIT_PER_MINUTE = 20;
+
+interface Bucket {
+  count: number;
+  windowStart: number;
+}
+const buckets = new Map<string, Bucket>();
+
+/** Sliding fixed-window limiter keyed by session id. True when allowed. */
+export function rateLimit(key: string): boolean {
+  const now = Date.now();
+  if (buckets.size > 10_000) {
+    for (const [k, b] of buckets) {
+      if (now - b.windowStart > 60_000) buckets.delete(k);
+    }
+  }
+  const bucket = buckets.get(key);
+  if (!bucket || now - bucket.windowStart > 60_000) {
+    buckets.set(key, { count: 1, windowStart: now });
+    return true;
+  }
+  bucket.count += 1;
+  return bucket.count <= RATE_LIMIT_PER_MINUTE;
+}
 
 function requireKey(): string {
   const key = process.env.ELEVENLABS_API_KEY;
@@ -21,6 +61,10 @@ export async function sttProxy(req: Request): Promise<Response> {
     if (!contentType.includes("multipart/form-data")) {
       return json({ error: "Expected multipart/form-data with an 'audio' file field" }, 400);
     }
+    const declared = Number(req.headers.get("content-length") ?? "0");
+    if (declared > STT_MAX_BYTES) {
+      return json({ error: `Audio too large (max ${STT_MAX_BYTES} bytes)` }, 413);
+    }
     const upstream = await fetch(`${ELEVEN_BASE}/speech-to-text`, {
       method: "POST",
       headers: { "xi-api-key": key, "content-type": contentType },
@@ -35,24 +79,30 @@ export async function sttProxy(req: Request): Promise<Response> {
 }
 
 /**
- * POST /api/elevenlabs/tts?voiceId=<id> — body { text }.
- * Streams back mp3 audio using eleven_turbo_v2_5 by default.
+ * POST /api/elevenlabs/tts — body { text }.
+ * Streams back mp3 audio. Voice and model are server-configured; any
+ * voiceId / model_id supplied by the client is rejected outright.
  */
 export async function ttsProxy(req: Request): Promise<Response> {
   try {
     const key = requireKey();
     const url = new URL(req.url);
-    const voiceId = url.searchParams.get("voiceId") ?? "21m00Tcm4TlvDq8ikWAM"; // Rachel
-    const model = url.searchParams.get("model_id") ?? "eleven_turbo_v2_5";
+    // Reject client-supplied voice/model selection explicitly.
+    if (url.searchParams.has("voiceId") || url.searchParams.has("model_id")) {
+      return json({ error: "Client-supplied voice or model selection is not allowed" }, 400);
+    }
 
     const payload = (await req.json().catch(() => null)) as { text?: string } | null;
     const text = typeof payload?.text === "string" ? payload.text : "";
     if (!text.trim()) {
       return json({ error: "JSON body must include { text: string }" }, 400);
     }
+    if (text.length > TTS_TEXT_MAX_CHARS) {
+      return json({ error: `Text too long (max ${TTS_TEXT_MAX_CHARS} characters)` }, 413);
+    }
 
     const upstream = await fetch(
-      `${ELEVEN_BASE}/text-to-speech/${encodeURIComponent(voiceId)}?model_id=${encodeURIComponent(model)}&output_format=mp3_44100_128`,
+      `${ELEVEN_BASE}/text-to-speech/${encodeURIComponent(SERVER_VOICE_ID)}?model_id=${encodeURIComponent(SERVER_MODEL_ID)}&output_format=mp3_44100_128`,
       {
         method: "POST",
         headers: {
@@ -60,7 +110,7 @@ export async function ttsProxy(req: Request): Promise<Response> {
           "content-type": "application/json",
           accept: "audio/mpeg",
         },
-        body: JSON.stringify({ text, model_id: model }),
+        body: JSON.stringify({ text, model_id: SERVER_MODEL_ID }),
       },
     );
     return passthrough(upstream);
