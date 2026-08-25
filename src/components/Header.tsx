@@ -32,6 +32,20 @@ export default function Header() {
             About
           </Link>
           <Link
+            to="/transcript"
+            className="nav-link"
+            activeProps={{ className: 'nav-link is-active' }}
+          >
+            Transcript
+          </Link>
+          <Link
+            to="/puppet"
+            className="nav-link"
+            activeProps={{ className: 'nav-link is-active' }}
+          >
+            Puppet View
+          </Link>
+          <Link
             to="/settings"
             className="nav-link"
             activeProps={{ className: 'nav-link is-active' }}
