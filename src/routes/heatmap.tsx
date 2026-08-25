@@ -60,7 +60,7 @@ function useLiveRunStream() {
     fetchRuns().then((runs) => {
       if (!disposed && runs.length > 0)
         liveRunStore.setRuns(
-          runs.map((r) => ({ id: r.id, status: r.status, endedAt: r.endedAt })),
+          runs.map((r) => ({ id: r.id ?? '', status: r.status, endedAt: r.endedAt })),
         )
     })
 
