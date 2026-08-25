@@ -10,7 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AboutRouteImport } from './routes/about'
+import { Route as PuppetRouteImport } from './routes/puppet'
 import { Route as TranscriptRouteImport } from './routes/transcript'
 
 const IndexRoute = IndexRouteImport.update({
@@ -18,9 +18,9 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AboutRoute = AboutRouteImport.update({
-  id: '/about',
-  path: '/about',
+const PuppetRoute = PuppetRouteImport.update({
+  id: '/puppet',
+  path: '/puppet',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TranscriptRoute = TranscriptRouteImport.update({
@@ -31,31 +31,31 @@ const TranscriptRoute = TranscriptRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/about': typeof AboutRoute
+  '/puppet': typeof PuppetRoute
   '/transcript': typeof TranscriptRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/about': typeof AboutRoute
+  '/puppet': typeof PuppetRoute
   '/transcript': typeof TranscriptRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/about': typeof AboutRoute
+  '/puppet': typeof PuppetRoute
   '/transcript': typeof TranscriptRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about' | '/transcript'
+  fullPaths: '/' | '/puppet' | '/transcript'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/transcript'
-  id: '__root__' | '/' | '/about' | '/transcript'
+  to: '/' | '/puppet' | '/transcript'
+  id: '__root__' | '/' | '/puppet' | '/transcript'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AboutRoute: typeof AboutRoute
+  PuppetRoute: typeof PuppetRoute
   TranscriptRoute: typeof TranscriptRoute
 }
 
@@ -68,11 +68,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/about': {
-      id: '/about'
-      path: '/about'
-      fullPath: '/about'
-      preLoaderRoute: typeof AboutRouteImport
+    '/puppet': {
+      id: '/puppet'
+      path: '/puppet'
+      fullPath: '/puppet'
+      preLoaderRoute: typeof PuppetRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/transcript': {
@@ -87,7 +87,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AboutRoute: AboutRoute,
+  PuppetRoute: PuppetRoute,
   TranscriptRoute: TranscriptRoute,
 }
 export const routeTree = rootRouteImport
