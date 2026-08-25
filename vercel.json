@@ -4,6 +4,9 @@
   "outputDirectory": ".output/public",
   "cleanUrls": true,
   "rewrites": [
-    { "source": "/((?!api/).*)", "destination": "/$1" }
+    {
+      "source": "/api/gateway/:path*",
+      "destination": "/api/gateway"
+    }
   ]
 }
