@@ -1,16 +1,10 @@
-import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
-import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
-import { TanStackDevtools } from '@tanstack/react-devtools'
-import Footer from '../components/Footer'
-import Header from '../components/Header'
+import { HeadContent, Scripts, createRootRoute, Link } from '@tanstack/react-router'
 import { ChatModeProvider, useChatMode } from '../lib/chat-mode'
 import { ChatModeToggle } from '../components/text-chat/ChatModeToggle'
 import { TextChatPanel } from '../components/text-chat/TextChatPanel'
 import { AppProviders } from '../lib/query-provider'
 
 import appCss from '../styles.css?url'
-
-const THEME_INIT_SCRIPT = `(function(){try{var stored=window.localStorage.getItem('theme');var mode=(stored==='light'||stored==='dark'||stored==='auto')?stored:'auto';var prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;var resolved=mode==='auto'?(prefersDark?'dark':'light'):mode;var root=document.documentElement;root.classList.remove('light','dark');root.classList.add(resolved);if(mode==='auto'){root.removeAttribute('data-theme')}else{root.setAttribute('data-theme',mode)}root.style.colorScheme=resolved;}catch(e){}})();`
 
 export const Route = createRootRoute({
   head: () => ({
@@ -23,7 +17,7 @@ export const Route = createRootRoute({
         content: 'width=device-width, initial-scale=1',
       },
       {
-        title: 'Orole-OS',
+        title: 'Orole-OS · Mission Control',
       },
     ],
     links: [
@@ -35,6 +29,11 @@ export const Route = createRootRoute({
   }),
   shellComponent: RootDocument,
 })
+
+const NAV = [
+  { to: '/', label: 'Mission Control' },
+  { to: '/puppet', label: 'Puppet View' },
+] as const
 
 /** Renders the text chat overlay while in backup (text) mode. */
 function TextModeGate({ children }: { children: React.ReactNode }) {
@@ -49,31 +48,68 @@ function TextModeGate({ children }: { children: React.ReactNode }) {
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className="dark">
       <head>
-        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <HeadContent />
       </head>
-      <body className="dark font-sans antialiased [overflow-wrap:anywhere] selection:bg-neon-cyan/20">
+      <body className="dark min-h-screen font-sans antialiased [overflow-wrap:anywhere] selection:bg-primary/20">
         <AppProviders>
           <ChatModeProvider>
-            <Header />
+            <div className="flex min-h-screen flex-col">
+              <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-lg">
+                <nav
+                  aria-label="Primary"
+                  className="hud-page flex items-center gap-6 py-3"
+                >
+                  <Link
+                    to="/"
+                    className="flex items-center gap-2.5 no-underline"
+                    activeOptions={{ exact: true }}
+                  >
+                    <span className="relative inline-flex size-2.5 rounded-full bg-status-running shadow-[0_0_10px_var(--status-running-glow)] motion-safe:animate-pulse" />
+                    <span className="font-mono text-sm font-semibold uppercase tracking-[0.3em] text-foreground">
+                      Orole<span className="text-neon-cyan">·</span>OS
+                    </span>
+                  </Link>
+                  <div className="flex items-center gap-4">
+                    {NAV.map((item) => (
+                      <Link
+                        key={item.to}
+                        to={item.to}
+                        activeProps={{
+                          className:
+                            'font-mono text-xs uppercase tracking-[0.2em] text-neon-cyan no-underline',
+                        }}
+                        inactiveProps={{
+                          className:
+                            'font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground no-underline transition-colors hover:text-foreground',
+                        }}
+                      >
+                        {item.label}
+                      </Link>
+                    ))}
+                  </div>
+                </nav>
+              </header>
+
+              <main className="flex flex-1 flex-col">
+                <TextModeGate>{children}</TextModeGate>
+              </main>
+
+              <footer className="border-t border-border">
+                <div className="hud-page flex items-center justify-between py-4">
+                  <p className="hud-panel-title m-0">
+                    Orole-OS mission control
+                  </p>
+                  <p className="m-0 font-mono text-xs text-muted-foreground">
+                    all systems nominal
+                  </p>
+                </div>
+              </footer>
+            </div>
             <ChatModeToggle className="fixed right-4 top-20 z-40" />
-            <TextModeGate>{children}</TextModeGate>
-            <Footer />
           </ChatModeProvider>
         </AppProviders>
-        <TanStackDevtools
-          config={{
-            position: 'bottom-right',
-          }}
-          plugins={[
-            {
-              name: 'Tanstack Router',
-              render: <TanStackRouterDevtoolsPanel />,
-            },
-          ]}
-        />
         <Scripts />
       </body>
     </html>
