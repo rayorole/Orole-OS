@@ -3,6 +3,9 @@ import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import Footer from '../components/Footer'
 import Header from '../components/Header'
+import { ChatModeProvider, useChatMode } from '../lib/chat-mode'
+import { ChatModeToggle } from '../components/text-chat/ChatModeToggle'
+import { TextChatPanel } from '../components/text-chat/TextChatPanel'
 import { AppProviders } from '../lib/query-provider'
 
 import appCss from '../styles.css?url'
@@ -33,6 +36,17 @@ export const Route = createRootRoute({
   shellComponent: RootDocument,
 })
 
+/** Renders the text chat overlay while in backup (text) mode. */
+function TextModeGate({ children }: { children: React.ReactNode }) {
+  const { mode } = useChatMode()
+  return (
+    <>
+      {children}
+      {mode === 'text' && <TextChatPanel />}
+    </>
+  )
+}
+
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
@@ -42,9 +56,12 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body className="dark font-sans antialiased [overflow-wrap:anywhere] selection:bg-neon-cyan/20">
         <AppProviders>
-          <Header />
-          {children}
-          <Footer />
+          <ChatModeProvider>
+            <Header />
+            <ChatModeToggle className="fixed right-4 top-20 z-40" />
+            <TextModeGate>{children}</TextModeGate>
+            <Footer />
+          </ChatModeProvider>
         </AppProviders>
         <TanStackDevtools
           config={{
