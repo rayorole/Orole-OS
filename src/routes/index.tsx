@@ -110,7 +110,7 @@ function ActivityFeed() {
             emptyDescription="When your agents start working, live runs and session events stream into this feed."
             emptyAction={
               <Button asChild size="sm" variant="outline">
-                <Link to="/about">Learn how it works</Link>
+                <Link to="/">Learn how it works</Link>
               </Button>
             }
           >

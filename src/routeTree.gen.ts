@@ -10,19 +10,39 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CostsRouteImport } from './routes/costs'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as HeatmapRouteImport } from './routes/heatmap'
+import { Route as LeaderboardsRouteImport } from './routes/leaderboards'
 import { Route as PuppetRouteImport } from './routes/puppet'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as StarmapRouteImport } from './routes/starmap'
 import { Route as TranscriptRouteImport } from './routes/transcript'
+import { Route as RunsRunIdRouteImport } from './routes/runs.$runId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CostsRoute = CostsRouteImport.update({
+  id: '/costs',
+  path: '/costs',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HeatmapRoute = HeatmapRouteImport.update({
+  id: '/heatmap',
+  path: '/heatmap',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LeaderboardsRoute = LeaderboardsRouteImport.update({
+  id: '/leaderboards',
+  path: '/leaderboards',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PuppetRoute = PuppetRouteImport.update({
@@ -35,48 +55,109 @@ const SettingsRoute = SettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StarmapRoute = StarmapRouteImport.update({
+  id: '/starmap',
+  path: '/starmap',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TranscriptRoute = TranscriptRouteImport.update({
   id: '/transcript',
   path: '/transcript',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RunsRunIdRoute = RunsRunIdRouteImport.update({
+  id: '/runs/$runId',
+  path: '/runs/$runId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/costs': typeof CostsRoute
   '/dashboard': typeof DashboardRoute
+  '/heatmap': typeof HeatmapRoute
+  '/leaderboards': typeof LeaderboardsRoute
   '/puppet': typeof PuppetRoute
   '/settings': typeof SettingsRoute
+  '/starmap': typeof StarmapRoute
   '/transcript': typeof TranscriptRoute
+  '/runs/$runId': typeof RunsRunIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/costs': typeof CostsRoute
   '/dashboard': typeof DashboardRoute
+  '/heatmap': typeof HeatmapRoute
+  '/leaderboards': typeof LeaderboardsRoute
   '/puppet': typeof PuppetRoute
   '/settings': typeof SettingsRoute
+  '/starmap': typeof StarmapRoute
   '/transcript': typeof TranscriptRoute
+  '/runs/$runId': typeof RunsRunIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/costs': typeof CostsRoute
   '/dashboard': typeof DashboardRoute
+  '/heatmap': typeof HeatmapRoute
+  '/leaderboards': typeof LeaderboardsRoute
   '/puppet': typeof PuppetRoute
   '/settings': typeof SettingsRoute
+  '/starmap': typeof StarmapRoute
   '/transcript': typeof TranscriptRoute
+  '/runs/$runId': typeof RunsRunIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/dashboard' | '/puppet' | '/settings' | '/transcript'
+  fullPaths:
+    | '/'
+    | '/costs'
+    | '/dashboard'
+    | '/heatmap'
+    | '/leaderboards'
+    | '/puppet'
+    | '/settings'
+    | '/starmap'
+    | '/transcript'
+    | '/runs/$runId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/dashboard' | '/puppet' | '/settings' | '/transcript'
-  id: '__root__' | '/' | '/dashboard' | '/puppet' | '/settings' | '/transcript'
+  to:
+    | '/'
+    | '/costs'
+    | '/dashboard'
+    | '/heatmap'
+    | '/leaderboards'
+    | '/puppet'
+    | '/settings'
+    | '/starmap'
+    | '/transcript'
+    | '/runs/$runId'
+  id:
+    | '__root__'
+    | '/'
+    | '/costs'
+    | '/dashboard'
+    | '/heatmap'
+    | '/leaderboards'
+    | '/puppet'
+    | '/settings'
+    | '/starmap'
+    | '/transcript'
+    | '/runs/$runId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CostsRoute: typeof CostsRoute
   DashboardRoute: typeof DashboardRoute
+  HeatmapRoute: typeof HeatmapRoute
+  LeaderboardsRoute: typeof LeaderboardsRoute
   PuppetRoute: typeof PuppetRoute
   SettingsRoute: typeof SettingsRoute
+  StarmapRoute: typeof StarmapRoute
   TranscriptRoute: typeof TranscriptRoute
+  RunsRunIdRoute: typeof RunsRunIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -88,11 +169,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/costs': {
+      id: '/costs'
+      path: '/costs'
+      fullPath: '/costs'
+      preLoaderRoute: typeof CostsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard': {
       id: '/dashboard'
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/heatmap': {
+      id: '/heatmap'
+      path: '/heatmap'
+      fullPath: '/heatmap'
+      preLoaderRoute: typeof HeatmapRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/leaderboards': {
+      id: '/leaderboards'
+      path: '/leaderboards'
+      fullPath: '/leaderboards'
+      preLoaderRoute: typeof LeaderboardsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/puppet': {
@@ -109,6 +211,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/starmap': {
+      id: '/starmap'
+      path: '/starmap'
+      fullPath: '/starmap'
+      preLoaderRoute: typeof StarmapRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/transcript': {
       id: '/transcript'
       path: '/transcript'
@@ -116,15 +225,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TranscriptRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/runs/$runId': {
+      id: '/runs/$runId'
+      path: '/runs/$runId'
+      fullPath: '/runs/$runId'
+      preLoaderRoute: typeof RunsRunIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CostsRoute: CostsRoute,
   DashboardRoute: DashboardRoute,
+  HeatmapRoute: HeatmapRoute,
+  LeaderboardsRoute: LeaderboardsRoute,
   PuppetRoute: PuppetRoute,
   SettingsRoute: SettingsRoute,
+  StarmapRoute: StarmapRoute,
   TranscriptRoute: TranscriptRoute,
+  RunsRunIdRoute: RunsRunIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

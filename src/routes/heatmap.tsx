@@ -40,7 +40,7 @@ async function fetchRuns(): Promise<HeatmapRun[]> {
           endedAt: Number.isFinite(endedAt as number) ? endedAt : null,
         }
       })
-      .filter((r): r is HeatmapRun => r.endedAt !== null)
+      .filter((r) => r.endedAt !== null)
   } catch {
     return []
   }
@@ -60,7 +60,7 @@ function useLiveRunStream() {
     fetchRuns().then((runs) => {
       if (!disposed && runs.length > 0)
         liveRunStore.setRuns(
-          runs.map((r) => ({ id: r.id, status: r.status, endedAt: r.endedAt })),
+          runs.map((r) => ({ id: r.id ?? '', status: r.status, endedAt: r.endedAt })),
         )
     })
 

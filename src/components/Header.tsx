@@ -1,5 +1,4 @@
 import { Link } from '@tanstack/react-router'
-import ThemeToggle from './ThemeToggle'
 import ConnectionIndicator from './ConnectionIndicator'
 
 export default function Header() {
@@ -23,13 +22,6 @@ export default function Header() {
             activeProps={{ className: 'nav-link is-active' }}
           >
             Home
-          </Link>
-          <Link
-            to="/about"
-            className="nav-link"
-            activeProps={{ className: 'nav-link is-active' }}
-          >
-            About
           </Link>
           <Link
             to="/transcript"
@@ -93,7 +85,6 @@ export default function Header() {
             </svg>
           </a>
 
-          <ThemeToggle />
         </div>
       </nav>
     </header>
