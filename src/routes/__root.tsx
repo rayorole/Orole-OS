@@ -1,15 +1,4 @@
-<<<<<<< HEAD
-import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
-import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
-import { TanStackDevtools } from '@tanstack/react-devtools'
-import Footer from '../components/Footer'
-import Header from '../components/Header'
-import { ChatModeProvider, useChatMode } from '../lib/chat-mode'
-import { ChatModeToggle } from '../components/text-chat/ChatModeToggle'
-import { TextChatPanel } from '../components/text-chat/TextChatPanel'
-=======
 import { HeadContent, Scripts, createRootRoute, Link } from '@tanstack/react-router'
->>>>>>> 8ef481b (feat(ui): dark HUD design system, purge TanStack starter boilerplate)
 import { AppProviders } from '../lib/query-provider'
 
 import appCss from '../styles.css?url'
@@ -38,23 +27,10 @@ export const Route = createRootRoute({
   shellComponent: RootDocument,
 })
 
-<<<<<<< HEAD
-/** Renders the text chat overlay while in backup (text) mode. */
-function TextModeGate({ children }: { children: React.ReactNode }) {
-  const { mode } = useChatMode()
-  return (
-    <>
-      {children}
-      {mode === 'text' && <TextChatPanel />}
-    </>
-  )
-}
-=======
 const NAV = [
   { to: '/', label: 'Mission Control' },
   { to: '/heatmap', label: 'Heatmap' },
 ] as const
->>>>>>> 8ef481b (feat(ui): dark HUD design system, purge TanStack starter boilerplate)
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
@@ -64,14 +40,6 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body className="dark min-h-screen font-sans antialiased [overflow-wrap:anywhere] selection:bg-primary/20">
         <AppProviders>
-<<<<<<< HEAD
-          <ChatModeProvider>
-            <Header />
-            <ChatModeToggle className="fixed right-4 top-20 z-40" />
-            <TextModeGate>{children}</TextModeGate>
-            <Footer />
-          </ChatModeProvider>
-=======
           <div className="flex min-h-screen flex-col">
             <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-lg">
               <nav
@@ -122,7 +90,6 @@ function RootDocument({ children }: { children: React.ReactNode }) {
               </div>
             </footer>
           </div>
->>>>>>> 8ef481b (feat(ui): dark HUD design system, purge TanStack starter boilerplate)
         </AppProviders>
         <Scripts />
       </body>
