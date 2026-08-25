@@ -1,3 +1,7 @@
+# Orole-OS
+
+Jarvis-style mission control for Hermes Agent OS
+
 Welcome to your new TanStack Start app!
 
 # Getting Started
@@ -8,6 +12,34 @@ To run this application:
 npm install
 npm run dev
 ```
+
+# Testing
+
+The project uses [Vitest](https://vitest.dev) with jsdom and Testing Library.
+Everything runs with a single command:
+
+```bash
+npm test          # run the full suite once (CI mode)
+npm run test:watch
+```
+
+Coverage:
+
+- **Unit — API client** (`tests/api-client.test.ts`): request building, auth
+  headers, happy path, network failure, 401/403/5xx mapping, malformed JSON,
+  and SSE parsing (`assistant.delta`, `tool.started`, `tool.completed`,
+  `event:` frames, heartbeats/comments, malformed payloads).
+- **Unit — hooks** (`tests/hooks.test.tsx`): loading/success/error states for
+  `useGatewayStatus` / `useActivityFeed`, plus SSE subscribe/unsubscribe
+  cleanup for `useAgentStream` (mocked fetch streams).
+- **Smoke/e2e routes** (`tests/routes.smoke.test.tsx`): every main route —
+  dashboard/home, about, analytics, settings, per-agent transcript — is
+  rendered through the real router with mocked gateway responses, key UI
+  assertions, and zero uncaught errors. The voice overlay mount is covered
+  with mocked Speech APIs (`SpeechRecognition`, `speechSynthesis`).
+
+Test files live in `tests/`; shared setup (jsdom polyfills, cleanup) is in
+`tests/setup.ts`.
 
 # Building For Production
 
