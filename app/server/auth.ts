@@ -41,20 +41,17 @@ function isSecureRequest(req: Request): boolean {
 
 /** Verify a candidate key against a cheap authenticated gateway call. */
 async function verifyGatewayKey(key: string): Promise<boolean> {
-  if (process.env.HERMES_GATEWAY_URL) {
-    try {
-      const res = await fetch(`${GATEWAY_BASE}/v1/models`, {
-        headers: { Authorization: `Bearer ${key}` },
-      });
-      return res.ok;
-    } catch {
-      // Gateway configured but unreachable — fail closed.
-      return false;
-    }
+  try {
+    const res = await fetch(`${GATEWAY_BASE}/v1/models`, {
+      headers: { Authorization: `Bearer ${key}` },
+      signal: AbortSignal.timeout(8000),
+    });
+    return res.ok;
+  } catch {
+    // Gateway unreachable — fail closed rather than issuing a session that
+    // can only end in confusing 401s from every proxied call.
+    return false;
   }
-  // No explicit gateway configured (local dev): accept and let proxied
-  // requests surface auth errors from the actual backend later.
-  return true;
 }
 
 export async function login(req: Request): Promise<Response> {
