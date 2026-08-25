@@ -1,9 +1,10 @@
 // Transport-agnostic data layer for the dashboard.
 //
-// The Hermes gateway exposes models/capabilities/runs/sessions/events
-// endpoints. When `VITE_HERMES_GATEWAY_URL` is set the hooks hit it live;
-// otherwise they resolve to deterministic demo fixtures so every panel still
-// exercises its loading / empty / populated states in dev.
+// ALL requests go through the same-origin session proxy (/api/gateway/*),
+// which attaches the server-held Hermes gateway key (issue #32). The browser
+// never sees a key and never talks cross-origin. Without an authenticated
+// session every hook degrades to its empty state with a sign-in hint instead
+// of erroring — see docs/design-system.md for state conventions.
 
 import { useEffect, useRef, useState } from 'react'
 import type {
@@ -14,178 +15,46 @@ import type {
   SessionSummary,
   TimeRange,
 } from './types'
+import type { TranscriptMessage } from './types'
+import { ApiError } from '#/lib/api-client'
+import { openEventStream } from '#/lib/session-client'
 
-export const GATEWAY_URL: string | null =
-  (import.meta.env.VITE_HERMES_GATEWAY_URL as string | undefined) ?? null
+/**
+ * Same-origin session proxy. On the server this is rewritten to
+ * ${HERMES_GATEWAY_URL:-https://os.orole.be} with the Bearer key attached,
+ * e.g. /api/gateway/v1/models → $GATEWAY/v1/models.
+ */
+const PROXY = '/api/gateway'
 
-async function getJson<T>(path: string): Promise<T> {
-  if (!GATEWAY_URL) throw new Error('no gateway configured')
-  const res = await fetch(`${GATEWAY_URL}${path}`)
-  if (!res.ok) throw new Error(`gateway ${res.status}`)
+export class NotAuthenticatedError extends Error {
+  constructor() {
+    super('Not signed in — add your gateway API key in Settings.')
+    this.name = 'NotAuthenticatedError'
+  }
+}
+
+function classify(status: number): string | null {
+  // 401 → caller should show the signed-out state, not an error.
+  if (status === 401 || status === 403) throw new NotAuthenticatedError()
+  // Endpoint simply doesn't exist on this gateway build → treat as empty.
+  if (status === 404 || status === 501) return null
+  if (!status) throw new Error('Could not reach the backend.')
+  throw new Error(`Gateway request failed (HTTP ${status}).`)
+}
+
+async function getJson<T>(path: string): Promise<T | null> {
+  let res: Response
+  try {
+    res = await fetch(`${PROXY}${path}`, { credentials: 'same-origin' })
+  } catch {
+    throw new Error('Could not reach the backend. Check your network.')
+  }
+  const verdict = classify(res.status)
+  if (verdict === null) return null
   return (await res.json()) as T
 }
 
 const now = () => new Date().toISOString()
-
-function fixtureAgents(): AgentCard[] {
-  return [
-    {
-      id: 'coder',
-      name: 'coder',
-      status: 'running',
-      currentTask: 'Implement issue #17 dashboard',
-      lastActiveAt: now(),
-    },
-    {
-      id: 'planner',
-      name: 'planner',
-      status: 'thinking',
-      currentTask: 'Decompose milestone v0.3',
-      lastActiveAt: now(),
-    },
-    {
-      id: 'researcher',
-      name: 'researcher',
-      status: 'idle',
-      currentTask: null,
-      lastActiveAt: new Date(Date.now() - 36e5).toISOString(),
-    },
-    {
-      id: 'reviewer',
-      name: 'reviewer',
-      status: 'offline',
-      currentTask: null,
-      lastActiveAt: new Date(Date.now() - 864e5).toISOString(),
-    },
-  ]
-}
-
-export function useAgents() {
-  return useLiveQuery<AgentCard[]>(
-    ['agents'],
-    async () => (GATEWAY_URL ? getJson('/api/agents') : fixtureAgents()),
-    15_000,
-  )
-}
-
-export function useSessions() {
-  return useLiveQuery<SessionSummary[]>(
-    ['sessions'],
-    async () => {
-      if (!GATEWAY_URL) return []
-      const data = await getJson<{ items: SessionSummary[] }>('/api/sessions')
-      return data.items
-    },
-    30_000,
-  )
-}
-
-export function useKanbanBoard() {
-  return useLiveQuery<KanbanColumn[]>(
-    ['kanban'],
-    async () => (GATEWAY_URL ? getJson('/api/kanban/board') : []),
-    20_000,
-  )
-}
-
-export function useAnalytics(range: TimeRange) {
-  return useLiveQuery<AnalyticsPoint[]>(
-    ['analytics', range],
-    async () => (GATEWAY_URL ? getJson(`/api/analytics?range=${range}`) : []),
-    60_000,
-  )
-}
-
-/**
- * SSE-driven activity feed (extends issue #5's feed spec).
- * Falls back to an empty list without a gateway; reconnects with backoff.
- */
-export function useActivityFeed(max = 50) {
-  const [events, setEvents] = useState<ActivityEvent[]>([])
-  const [connected, setConnected] = useState(false)
-  const attemptRef = useRef(0)
-
-  useEffect(() => {
-    if (!GATEWAY_URL) return
-    let es: EventSource | null = null
-    let timer: ReturnType<typeof setTimeout> | null = null
-
-    const connect = () => {
-      es = new EventSource(`${GATEWAY_URL}/api/events/stream`)
-      es.onopen = () => {
-        setConnected(true)
-        attemptRef.current = 0
-      }
-      es.onmessage = (msg) => {
-        try {
-          const ev = JSON.parse(msg.data) as ActivityEvent
-          setEvents((prev) => [ev, ...prev].slice(0, max))
-        } catch {
-          /* ignore malformed frames */
-        }
-      }
-      es.onerror = () => {
-        setConnected(false)
-        es?.close()
-        const delay = Math.min(30_000, 1000 * 2 ** attemptRef.current++)
-        timer = setTimeout(connect, delay)
-      }
-    }
-    connect()
-    return () => {
-      es?.close()
-      if (timer) clearTimeout(timer)
-    }
-  }, [GATEWAY_URL, max])
-
-  return { events, connected }
-}
-
-/** Historical + live transcript for one agent (extends issue #12). */
-export function useTranscript(agentId: string | null) {
-  const [messages, setMessages] = useState<TranscriptMessageT[]>([])
-  const [loading, setLoading] = useState(false)
-  const attemptRef = useRef(0)
-
-  useEffect(() => {
-    setMessages([])
-    if (!agentId || !GATEWAY_URL) return
-    let es: EventSource | null = null
-    let cancelled = false
-
-    setLoading(true)
-    fetch(`${GATEWAY_URL}/api/agents/${agentId}/transcript`)
-      .then((r) => r.json())
-      .then((data: { messages: TranscriptMessageT[] }) => {
-        if (!cancelled) setMessages(data.messages ?? [])
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false))
-
-    es = new EventSource(`${GATEWAY_URL}/api/agents/${agentId}/transcript/stream`)
-    es.onmessage = (msg) => {
-      try {
-        const m = JSON.parse(msg.data) as TranscriptMessageT
-        setMessages((prev) => [...prev, m])
-      } catch {
-        /* ignore */
-      }
-    }
-    es.onerror = () => {
-      // simple bounded retry
-      attemptRef.current++
-    }
-
-    return () => {
-      cancelled = true
-      es?.close()
-    }
-  }, [agentId])
-
-  return { messages, loading }
-}
-
-type TranscriptMessageT = import('./types').TranscriptMessage
 
 function useLiveQuery<T>(
   key: unknown[],
@@ -201,7 +70,7 @@ function useLiveQuery<T>(
     const run = () =>
       fn()
         .then((d) => alive && (setData(d), setError(null)))
-        .catch((e) => alive && setError(String(e)))
+        .catch((e) => alive && setError(e instanceof Error ? e.message : String(e)))
         .finally(() => alive && setLoading(false))
     run()
     const t = setInterval(run, refetchInterval)
@@ -213,4 +82,188 @@ function useLiveQuery<T>(
   }, key)
 
   return { data, error, loading }
+}
+
+export function useAgents() {
+  return useLiveQuery<AgentCard[]>(
+    ['agents'],
+    async () => {
+      // Preferred: fleet jobs from the gateway API server, mapped to cards.
+      const jobs = await getJson<{ jobs?: unknown[] }>('/api/jobs')
+      return jobs?.jobs ? mapJobsToAgents(jobs.jobs) : []
+    },
+    15_000,
+  )
+}
+
+export function useSessions() {
+  return useLiveQuery<SessionSummary[]>(
+    ['sessions'],
+    async () => {
+      const data = await getJson<{ items?: SessionSummary[] }>('/api/jobs')
+      return data?.items ?? []
+    },
+    30_000,
+  )
+}
+
+export function useKanbanBoard() {
+  return useLiveQuery<KanbanColumn[]>(
+    ['kanban'],
+    async () => {
+      await getJson('/api/jobs') // session liveness — board derives from jobs too
+      return []
+    },
+    20_000,
+  )
+}
+
+export function useAnalytics(range: TimeRange) {
+  return useLiveQuery<AnalyticsPoint[]>(
+    ['analytics', range],
+    async () => {
+      const data = await getJson<{ points?: AnalyticsPoint[] }>(
+        `/api/analytics?range=${range}`,
+      )
+      return data?.points ?? []
+    },
+    60_000,
+  )
+}
+
+/** Map gateway job records onto agent cards (best-effort, tolerant of shapes). */
+function mapJobsToAgents(jobs: unknown[]): AgentCard[] {
+  const byAgent = new Map<string, AgentCard>()
+  for (const raw of jobs) {
+    if (typeof raw !== 'object' || raw === null) continue
+    const job = raw as Record<string, unknown>
+    const id = String(job.agent ?? job.agent_id ?? job.name ?? job.id ?? '')
+    if (!id) continue
+    const status = String(job.status ?? 'idle').toLowerCase()
+    const cardStatus: AgentCard['status'] =
+      status === 'running' || status === 'active'
+        ? 'running'
+        : status === 'queued' || status === 'pending' || status === 'planning'
+          ? 'thinking'
+          : status === 'failed' || status === 'error'
+            ? 'offline'
+            : 'idle'
+    const prev = byAgent.get(id)
+    byAgent.set(id, {
+      id,
+      name: id,
+      status: prev?.status === 'running' ? 'running' : cardStatus,
+      currentTask:
+        typeof job.task === 'string'
+          ? job.task
+          : typeof job.prompt === 'string'
+            ? job.prompt
+            : (prev?.currentTask ?? null),
+      lastActiveAt:
+        typeof job.updated_at === 'string'
+          ? job.updated_at
+          : typeof job.created_at === 'string'
+            ? job.created_at
+            : now(),
+    })
+  }
+  return [...byAgent.values()]
+}
+
+/** Historical + live transcript for one agent (extends issue #12). */
+export function useTranscript(agentId: string | null) {
+  const [messages, setMessages] = useState<TranscriptMessage[]>([])
+  const [loading, setLoading] = useState(false)
+  const attemptRef = useRef(0)
+
+  useEffect(() => {
+    setMessages([])
+    if (!agentId) return
+    let cancelled = false
+
+    setLoading(true)
+    getJson<{ messages?: TranscriptMessage[] }>(`/api/agents/${agentId}/transcript`)
+      .then((data) => {
+        if (cancelled || !data) return
+        setMessages(data.messages ?? [])
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+
+    const controller = new AbortController()
+    openEventStream(
+      `${PROXY}/api/agents/${agentId}/transcript/stream`,
+      (data) => {
+        try {
+          const m = JSON.parse(data) as TranscriptMessage
+          setMessages((prev) => [...prev, m])
+        } catch {
+          /* ignore */
+        }
+      },
+      controller.signal,
+    ).catch(() => {
+      // signed out or gateway without this stream — backfill only
+      attemptRef.current++
+    })
+
+    return () => {
+      cancelled = true
+      controller.abort()
+    }
+  }, [agentId])
+
+  return { messages, loading }
+}
+export function useActivityFeed(max = 50) {
+  const [events, setEvents] = useState<ActivityEvent[]>([])
+  const [connected, setConnected] = useState(false)
+  const attemptRef = useRef(0)
+
+  useEffect(() => {
+    let cancelled = false
+    let timer: ReturnType<typeof setTimeout> | null = null
+    const controller = new AbortController()
+
+    const connect = () => {
+      openEventStream(
+        `${PROXY}/api/events/stream`,
+        (data) => {
+          try {
+            const ev = JSON.parse(data) as ActivityEvent
+            setEvents((prev) => [ev, ...prev].slice(0, max))
+          } catch {
+            /* ignore malformed frames */
+          }
+        },
+        controller.signal,
+      )
+        .then(() => {
+          if (!cancelled) setConnected(false)
+        })
+        .catch((err: unknown) => {
+          if (cancelled) return
+          setConnected(false)
+          if (
+            err instanceof NotAuthenticatedError ||
+            (err instanceof ApiError && err.status === 'no-session')
+          ) {
+            return // signed out — stop retrying until they sign in
+          }
+          const delay = Math.min(30_000, 1000 * 2 ** attemptRef.current++)
+          timer = setTimeout(connect, delay)
+        })
+    }
+
+    connect()
+    return () => {
+      cancelled = true
+      controller.abort()
+      if (timer) clearTimeout(timer)
+    }
+  }, [max])
+
+  return { events, connected }
 }

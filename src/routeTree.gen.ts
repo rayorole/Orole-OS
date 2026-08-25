@@ -21,11 +21,6 @@ import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as StarmapRouteImport } from './routes/starmap'
 import { Route as TranscriptRouteImport } from './routes/transcript'
 import { Route as RunsRunIdRouteImport } from './routes/runs.$runId'
-import { Route as ApiAuthLoginRouteImport } from './routes/api/auth/login'
-import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
-import { Route as ApiAuthSessionRouteImport } from './routes/api/auth/session'
-import { Route as ApiAuthStreamTokenRouteImport } from './routes/api/auth/stream-token'
-import { Route as ApiGatewaySplatRouteImport } from './routes/api/gateway/$'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -87,31 +82,6 @@ const RunsRunIdRoute = RunsRunIdRouteImport.update({
   path: '/runs/$runId',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiAuthLoginRoute = ApiAuthLoginRouteImport.update({
-  id: '/api/auth/login',
-  path: '/api/auth/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiAuthLogoutRoute = ApiAuthLogoutRouteImport.update({
-  id: '/api/auth/logout',
-  path: '/api/auth/logout',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiAuthSessionRoute = ApiAuthSessionRouteImport.update({
-  id: '/api/auth/session',
-  path: '/api/auth/session',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiAuthStreamTokenRoute = ApiAuthStreamTokenRouteImport.update({
-  id: '/api/auth/stream-token',
-  path: '/api/auth/stream-token',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiGatewaySplatRoute = ApiGatewaySplatRouteImport.update({
-  id: '/api/gateway/$',
-  path: '/api/gateway/$',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -126,11 +96,6 @@ export interface FileRoutesByFullPath {
   '/starmap': typeof StarmapRoute
   '/transcript': typeof TranscriptRoute
   '/runs/$runId': typeof RunsRunIdRoute
-  '/api/auth/login': typeof ApiAuthLoginRoute
-  '/api/auth/logout': typeof ApiAuthLogoutRoute
-  '/api/auth/session': typeof ApiAuthSessionRoute
-  '/api/auth/stream-token': typeof ApiAuthStreamTokenRoute
-  '/api/gateway/$': typeof ApiGatewaySplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -145,11 +110,6 @@ export interface FileRoutesByTo {
   '/starmap': typeof StarmapRoute
   '/transcript': typeof TranscriptRoute
   '/runs/$runId': typeof RunsRunIdRoute
-  '/api/auth/login': typeof ApiAuthLoginRoute
-  '/api/auth/logout': typeof ApiAuthLogoutRoute
-  '/api/auth/session': typeof ApiAuthSessionRoute
-  '/api/auth/stream-token': typeof ApiAuthStreamTokenRoute
-  '/api/gateway/$': typeof ApiGatewaySplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -165,11 +125,6 @@ export interface FileRoutesById {
   '/starmap': typeof StarmapRoute
   '/transcript': typeof TranscriptRoute
   '/runs/$runId': typeof RunsRunIdRoute
-  '/api/auth/login': typeof ApiAuthLoginRoute
-  '/api/auth/logout': typeof ApiAuthLogoutRoute
-  '/api/auth/session': typeof ApiAuthSessionRoute
-  '/api/auth/stream-token': typeof ApiAuthStreamTokenRoute
-  '/api/gateway/$': typeof ApiGatewaySplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -186,11 +141,6 @@ export interface FileRouteTypes {
     | '/starmap'
     | '/transcript'
     | '/runs/$runId'
-    | '/api/auth/login'
-    | '/api/auth/logout'
-    | '/api/auth/session'
-    | '/api/auth/stream-token'
-    | '/api/gateway/$'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -205,11 +155,6 @@ export interface FileRouteTypes {
     | '/starmap'
     | '/transcript'
     | '/runs/$runId'
-    | '/api/auth/login'
-    | '/api/auth/logout'
-    | '/api/auth/session'
-    | '/api/auth/stream-token'
-    | '/api/gateway/$'
   id:
     | '__root__'
     | '/'
@@ -224,11 +169,6 @@ export interface FileRouteTypes {
     | '/starmap'
     | '/transcript'
     | '/runs/$runId'
-    | '/api/auth/login'
-    | '/api/auth/logout'
-    | '/api/auth/session'
-    | '/api/auth/stream-token'
-    | '/api/gateway/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -244,11 +184,6 @@ export interface RootRouteChildren {
   StarmapRoute: typeof StarmapRoute
   TranscriptRoute: typeof TranscriptRoute
   RunsRunIdRoute: typeof RunsRunIdRoute
-  ApiAuthLoginRoute: typeof ApiAuthLoginRoute
-  ApiAuthLogoutRoute: typeof ApiAuthLogoutRoute
-  ApiAuthSessionRoute: typeof ApiAuthSessionRoute
-  ApiAuthStreamTokenRoute: typeof ApiAuthStreamTokenRoute
-  ApiGatewaySplatRoute: typeof ApiGatewaySplatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -337,41 +272,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RunsRunIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/auth/login': {
-      id: '/api/auth/login'
-      path: '/api/auth/login'
-      fullPath: '/api/auth/login'
-      preLoaderRoute: typeof ApiAuthLoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/auth/logout': {
-      id: '/api/auth/logout'
-      path: '/api/auth/logout'
-      fullPath: '/api/auth/logout'
-      preLoaderRoute: typeof ApiAuthLogoutRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/auth/session': {
-      id: '/api/auth/session'
-      path: '/api/auth/session'
-      fullPath: '/api/auth/session'
-      preLoaderRoute: typeof ApiAuthSessionRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/auth/stream-token': {
-      id: '/api/auth/stream-token'
-      path: '/api/auth/stream-token'
-      fullPath: '/api/auth/stream-token'
-      preLoaderRoute: typeof ApiAuthStreamTokenRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/gateway/$': {
-      id: '/api/gateway/$'
-      path: '/api/gateway/$'
-      fullPath: '/api/gateway/$'
-      preLoaderRoute: typeof ApiGatewaySplatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
@@ -388,12 +288,16 @@ const rootRouteChildren: RootRouteChildren = {
   StarmapRoute: StarmapRoute,
   TranscriptRoute: TranscriptRoute,
   RunsRunIdRoute: RunsRunIdRoute,
-  ApiAuthLoginRoute: ApiAuthLoginRoute,
-  ApiAuthLogoutRoute: ApiAuthLogoutRoute,
-  ApiAuthSessionRoute: ApiAuthSessionRoute,
-  ApiAuthStreamTokenRoute: ApiAuthStreamTokenRoute,
-  ApiGatewaySplatRoute: ApiGatewaySplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
