@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 /*
  * Route smoke suite — renders each main route through the real TanStack
  * router against a mocked same-origin gateway: every route mounts and zero
@@ -169,19 +168,4 @@ describe('route smoke coverage', () => {
     }
     expect(fetchMock).toHaveBeenCalled()
   }, 30_000)
-=======
-import { describe, it, expect } from 'vitest'
-import { createRouter, createRootRoute, createRoute, Outlet, RouterProvider } from '@tanstack/react-router'
-import { render } from '@testing-library/react'
-
-describe('smoke', () => {
-  it('app mounts', () => {
-    const rootRoute = createRootRoute({ component: () => <main><Outlet /></main> })
-    const indexRoute = createRoute({ getParentRoute: () => rootRoute, path: '/', component: () => <div>mission control</div> })
-    const routeTree = rootRoute.addChildren([indexRoute])
-    const router = createRouter({ routeTree })
-    render(<RouterProvider router={router} />)
-    expect(document.querySelector('main')).not.toBeNull()
-  })
->>>>>>> origin/feat/test-coverage-vitest-e2e
 })

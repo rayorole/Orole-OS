@@ -78,14 +78,11 @@ const TranscriptRoute = TranscriptRouteImport.update({
   path: '/transcript',
   getParentRoute: () => rootRouteImport,
 } as any)
-<<<<<<< HEAD
 const AgentsAgentIdRoute = AgentsAgentIdRouteImport.update({
   id: '/agents/$agentId',
   path: '/agents/$agentId',
   getParentRoute: () => rootRouteImport,
 } as any)
-=======
->>>>>>> origin/feat/test-coverage-vitest-e2e
 const RunsRunIdRoute = RunsRunIdRouteImport.update({
   id: '/runs/$runId',
   path: '/runs/$runId',
@@ -281,7 +278,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TranscriptRouteImport
       parentRoute: typeof rootRouteImport
     }
-<<<<<<< HEAD
     '/agents/$agentId': {
       id: '/agents/$agentId'
       path: '/agents/$agentId'
@@ -289,8 +285,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AgentsAgentIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-=======
->>>>>>> origin/feat/test-coverage-vitest-e2e
     '/runs/$runId': {
       id: '/runs/$runId'
       path: '/runs/$runId'
