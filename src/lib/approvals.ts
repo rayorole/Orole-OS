@@ -56,7 +56,7 @@ export class AlreadyDecidedError extends Error {
 }
 
 function headers(extra?: Record<string, string>): Record<string, string> {
-  const h = { Accept: 'application/json', ...extra }
+  const h: Record<string, string> = { Accept: 'application/json', ...extra }
   if (HERMES_API_KEY) h.Authorization = `Bearer ${HERMES_API_KEY}`
   return h
 }
