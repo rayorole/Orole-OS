@@ -17,7 +17,11 @@ import {
   YAxis,
 } from 'recharts'
 
+import { Alert, AlertDescription, AlertTitle } from '#/components/ui/alert'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#/components/ui/card'
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '#/components/ui/empty'
+import { Skeleton } from '#/components/ui/skeleton'
+import { Tabs, TabsList, TabsTrigger } from '#/components/ui/tabs'
 import {
   TIME_RANGES,
   colorFor,
@@ -61,21 +65,35 @@ function HudTooltip({
   )
 }
 
-function Skeleton({ className = '' }: { className?: string }) {
+function HudEmptyState({
+  icon,
+  title,
+  description,
+  className,
+}: {
+  icon?: React.ReactNode
+  title: string
+  description?: string
+  className?: string
+}) {
   return (
-    <div aria-hidden="true" className={`animate-pulse rounded-md bg-[var(--muted)] ${className}`} />
-  )
-}
-
-function EmptyState({ icon, title, description }: { icon?: React.ReactNode; title: string; description?: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-[var(--border)] px-6 py-10 text-center">
-      {icon && <div className="text-[var(--neon-violet)]">{icon}</div>}
-      <p className="font-mono text-sm uppercase tracking-widest text-[var(--neon-cyan)]/80">{title}</p>
-      {description && (
-        <p className="max-w-md text-sm text-[var(--muted-foreground)]">{description}</p>
+    <Empty className={className}>
+      {icon && (
+        <EmptyMedia variant="icon">
+          {icon}
+        </EmptyMedia>
       )}
-    </div>
+      <EmptyHeader>
+        <EmptyTitle className="font-mono text-sm uppercase tracking-widest text-[var(--neon-cyan)]/80">
+          {title}
+        </EmptyTitle>
+        {description && (
+          <EmptyDescription className="max-w-md text-[var(--muted-foreground)]">
+            {description}
+          </EmptyDescription>
+        )}
+      </EmptyHeader>
+    </Empty>
   )
 }
 
@@ -105,7 +123,7 @@ function ChartPanel({
       <CardContent>
         {isEmpty ? (
           <div className="flex h-64 items-center justify-center">
-            <EmptyState title={emptyTitle} description="Nothing recorded in the selected time window." />
+            <HudEmptyState title={emptyTitle} description="Nothing recorded in the selected time window." />
           </div>
         ) : (
           <div className="h-64 w-full">{children}</div>
@@ -119,27 +137,19 @@ function ChartPanel({
 
 function RangeSelector({ value, onChange }: { value: TimeRange; onChange: (r: TimeRange) => void }) {
   return (
-    <div
-      role="tablist"
-      aria-label="Time range"
-      className="inline-flex overflow-hidden rounded-full border border-neon-cyan/30 bg-card"
-    >
-      {TIME_RANGES.map((r) => (
-        <button
-          key={r.value}
-          role="tab"
-          aria-selected={value === r.value}
-          onClick={() => onChange(r.value)}
-          className={`px-4 py-1.5 font-mono text-xs tracking-widest transition ${
-            value === r.value
-              ? 'bg-primary text-primary-foreground shadow-[0_0_12px_var(--grid-glow)]'
-              : 'text-muted-foreground hover:text-neon-cyan'
-          }`}
-        >
-          {r.label}
-        </button>
-      ))}
-    </div>
+    <Tabs value={value} onValueChange={(v) => onChange(v as TimeRange)}>
+      <TabsList aria-label="Time range" className="rounded-full border border-neon-cyan/30 bg-card">
+        {TIME_RANGES.map((r) => (
+          <TabsTrigger
+            key={r.value}
+            value={r.value}
+            className="px-4 font-mono text-xs tracking-widest data-[state=active]:shadow-[0_0_12px_var(--grid-glow)]"
+          >
+            {r.label}
+          </TabsTrigger>
+        ))}
+      </TabsList>
+    </Tabs>
   )
 }
 
@@ -206,11 +216,13 @@ function AnalyticsDashboard() {
   if (isError) {
     return (
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-16 sm:px-6">
-        <EmptyState
-          icon={<span className="text-2xl">⚠</span>}
-          title="Telemetry offline"
-          description={`Could not reach the Hermes API (${(error as Error)?.message ?? 'unknown error'}). Charts will populate once a gateway is connected.`}
-        />
+        <Alert variant="destructive">
+          <AlertTitle>Telemetry offline</AlertTitle>
+          <AlertDescription>
+            Could not reach the Hermes API ({(error as Error)?.message ?? 'unknown error'}). Charts
+            will populate once a gateway is connected.
+          </AlertDescription>
+        </Alert>
       </main>
     )
   }
@@ -239,7 +251,7 @@ function AnalyticsDashboard() {
         </div>
       ) : noData ? (
         <>
-          <EmptyState
+          <HudEmptyState
             icon={<span className="text-2xl">🛰</span>}
             title="No telemetry yet"
             description="Once your Hermes agents run sessions, activity, tokens and outcomes will chart here."
