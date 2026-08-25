@@ -82,18 +82,74 @@ function cookieHeaders(s) {
   ];
 }
 
+// Normalize Vercel's Node-style (req,res) args into a Web Request.
+function toWebRequest(req, res) {
+  if (typeof req.headers?.get === "function") return req; // already Web Request
+  const headers = new Headers();
+  for (const [k, v] of Object.entries(req.headers ?? {})) {
+    headers.set(k, Array.isArray(v) ? v.join(", ") : String(v));
+  }
+  const url = `https://${req.headers.host ?? "localhost"}${req.url ?? "/"}`;
+  return new Request(url, {
+    method: req.method,
+    headers,
+    body: ["GET", "HEAD"].includes(req.method) ? undefined : req,
+    // @ts-expect-error duplex
+    duplex: "half",
+  });
+}
+
+function sendWeb(res, webResponse) {
+  for (const [k, v] of webResponse.headers) {
+    if (k === "set-cookie") res.setHeader("set-cookie", webResponse.headers.getSetCookie?.() ?? [v]);
+    else res.setHeader(k, v);
+  }
+  res.statusCode = webResponse.status;
+  if (webResponse.body) {
+    void webResponse.body.pipeTo(new WritableStream({
+      write(c) { res.write(Buffer.from(c)); },
+      close() { res.end(); },
+      abort() { res.end(); },
+    }));
+  } else {
+    res.end();
+  }
+}
+
 
 export const config = { runtime: "nodejs" };
 
-export default async function handler(req) {
-  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
-  const id = parseCookies(req.headers.get("cookie"))[SESSION_COOKIE];
-  if (id) {
-    sessions.delete(id);
-    keyRing.delete(id);
+export default async function handler(req, res) {
+  const request = toWebRequest(req, res);
+  try {
+    const response = await handle(request);
+    if (res && typeof res.setHeader === "function") {
+      sendWeb(res, response);
+      return;
+    }
+    return response;
+  } catch (err) {
+    console.error("[api]", err);
+    const fail = json({ error: "Internal error" }, 500);
+    if (res && typeof res.setHeader === "function") { sendWeb(res, fail); return; }
+    return fail;
   }
-  const headers = new Headers({ "content-type": "application/json" });
-  headers.append("set-cookie", `${SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`);
-  headers.append("set-cookie", `${CSRF_COOKIE}=; Path=/; SameSite=Lax; Max-Age=0`);
-  return new Response(JSON.stringify({ ok: true }), { status: 200, headers });
+
+  async function handle(request) {
+if (request.method !== "POST") return json({ error: "Method not allowed" }, 405);
+    const id = parseCookies(request.headers.get("cookie"))[SESSION_COOKIE];
+    if (id) {
+      sessions.delete(id);
+      keyRing.delete(id);
+    }
+    return new Response(JSON.stringify({ ok: true }), {
+      status: 200,
+      headers: [
+        ["content-type", "application/json"],
+        ["set-cookie", `${SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`],
+        ["set-cookie", `${CSRF_COOKIE}=; Path=/; SameSite=Lax; Max-Age=0`],
+      ],
+    });
+  }
 }
+
