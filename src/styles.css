@@ -1,0 +1,91 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ── Orole-OS dark sci-fi theme tokens (Tailwind v4 @theme) ── */
+:root {
+  --radius: 0.625rem;
+
+  /* Deep space neutrals */
+  --background: oklch(0.145 0.02 265);
+  --foreground: oklch(0.93 0.02 200);
+  --card: oklch(0.18 0.025 260);
+  --card-foreground: oklch(0.93 0.02 200);
+  --popover: oklch(0.17 0.025 260);
+  --popover-foreground: oklch(0.93 0.02 200);
+
+  /* Neon cyan primary — holographic UI accent */
+  --primary: oklch(0.82 0.16 195);
+  --primary-foreground: oklch(0.15 0.03 250);
+
+  /* Plasma violet secondary */
+  --secondary: oklch(0.55 0.18 300);
+  --secondary-foreground: oklch(0.95 0.01 300);
+
+  /* Reactor green for muted accents */
+  --muted: oklch(0.24 0.02 255);
+  --muted-foreground: oklch(0.68 0.02 220);
+
+  --accent: oklch(0.3 0.05 210);
+  --accent-foreground: oklch(0.9 0.04 190);
+
+  /* Alert amber / destructive magenta */
+  --destructive: oklch(0.63 0.22 25);
+  --destructive-foreground: oklch(0.98 0.01 25);
+
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 14%);
+  --ring: oklch(0.82 0.16 195 / 60%);
+
+  /* Sci-fi extras usable as text-primary etc. via arbitrary values */
+  --neon-cyan: oklch(0.85 0.16 190);
+  --neon-violet: oklch(0.65 0.22 300);
+  --grid-glow: oklch(0.7 0.12 195 / 35%);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-neon-cyan: var(--neon-cyan);
+  --color-neon-violet: var(--neon-violet);
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+    outline-color: color-mix(in oklab, var(--color-ring) 50%, transparent);
+  }
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -10%, oklch(0.35 0.08 220 / 40%), transparent),
+      linear-gradient(oklch(1 0 0 / 2%) 1px, transparent 1px),
+      linear-gradient(90deg, oklch(1 0 0 / 2%) 1px, transparent 1px);
+    background-size: auto, 48px 48px, 48px 48px;
+  }
+}
