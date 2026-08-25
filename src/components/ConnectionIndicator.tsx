@@ -1,28 +1,38 @@
 import { useEffect, useState } from 'react'
 
 import { checkSession } from '#/lib/session-client'
+import { Badge } from '#/components/ui/badge'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '#/components/ui/tooltip'
 
 export type HeaderStatus = 'no-session' | 'unverified' | 'ok' | 'error'
 
-const LABELS: Record<HeaderStatus, { text: string; className: string; title: string }> = {
+const LABELS: Record<
+  HeaderStatus,
+  { text: string; variant: 'running' | 'pending' | 'failed' | 'idle'; title: string }
+> = {
   'no-session': {
     text: 'signed out',
-    className: 'text-destructive border-destructive/40',
+    variant: 'idle',
     title: 'No active session — open Settings to sign in.',
   },
   unverified: {
     text: 'session',
-    className: 'text-amber-400 border-amber-400/40',
+    variant: 'pending',
     title: 'Session active but not yet verified — test it in Settings.',
   },
   ok: {
     text: 'live',
-    className: 'text-neon-cyan border-neon-cyan/40',
+    variant: 'running',
     title: 'Connected to the backend via secure session.',
   },
   error: {
     text: 'offline',
-    className: 'text-destructive border-destructive/40',
+    variant: 'failed',
     title: 'Backend unreachable or session rejected — see Settings.',
   },
 }
@@ -62,13 +72,20 @@ export default function ConnectionIndicator() {
 
   const meta = LABELS[status]
   return (
-    <span
-      role="status"
-      title={meta.title}
-      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[11px] uppercase tracking-wider ${meta.className}`}
-    >
-      <span className="h-1.5 w-1.5 rounded-full bg-current" />
-      {meta.text}
-    </span>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Badge
+            role="status"
+            variant={meta.variant}
+            className="h-auto gap-1.5 px-2.5 py-1 font-mono text-[11px] uppercase tracking-wider"
+          >
+            <span className="size-1.5 rounded-full bg-current" />
+            {meta.text}
+          </Badge>
+        </TooltipTrigger>
+        <TooltipContent>{meta.title}</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   )
 }

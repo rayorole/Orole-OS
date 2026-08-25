@@ -3,14 +3,28 @@ import { useQueryClient } from '@tanstack/react-query'
 import {
   AlertTriangle,
   KeyRound,
-  Loader2,
   RefreshCw,
   ShieldAlert,
   WifiOff,
 } from 'lucide-react'
 
 import { Button } from '#/components/ui/button'
-import { Card, CardContent } from '#/components/ui/card'
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '#/components/ui/empty'
+import { Skeleton as UiSkeleton } from '#/components/ui/skeleton'
+import { Spinner } from '#/components/ui/spinner'
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from '#/components/ui/alert'
+import { cn } from '#/lib/utils'
 import {
   FailureClass,
   classifyFailure,
@@ -19,16 +33,12 @@ import {
 
 /* ── Skeleton ──────────────────────────────────────────────────────────── */
 
+/** Themed loading skeleton primitive (shadcn) kept for existing imports. */
 export function Skeleton({ className = '' }: { className?: string }) {
-  return (
-    <div
-      aria-hidden="true"
-      className={`animate-pulse rounded-md bg-[var(--muted)] ${className}`}
-    />
-  )
+  return <UiSkeleton className={className} />
 }
 
-/** Themed loading skeleton for a panel region. */
+/** Themed loading skeleton for a panel region (shadcn Skeleton rows). */
 export function LoadingState({
   label = 'Loading',
   rows = 3,
@@ -41,10 +51,10 @@ export function LoadingState({
       <span className="sr-only">{label}…</span>
       {Array.from({ length: rows }).map((_, i) => (
         <div key={i} className="flex items-center gap-3">
-          <Skeleton className="size-8 shrink-0 rounded-full" />
+          <UiSkeleton className="size-8 shrink-0 rounded-full" />
           <div className="flex-1 space-y-2">
-            <Skeleton className="h-3 w-3/4" />
-            <Skeleton className="h-3 w-1/2" />
+            <UiSkeleton className="h-3 w-3/4" />
+            <UiSkeleton className="h-3 w-1/2" />
           </div>
         </div>
       ))}
@@ -54,7 +64,7 @@ export function LoadingState({
 
 /* ── Empty ─────────────────────────────────────────────────────────────── */
 
-/** Friendly empty state with an optional call-to-action. */
+/** Friendly empty state with an optional call-to-action (shadcn Empty). */
 export function EmptyState({
   icon,
   title,
@@ -67,18 +77,20 @@ export function EmptyState({
   action?: ReactNode
 }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-[var(--border)] px-6 py-10 text-center">
-      {icon && <div className="text-[var(--neon-violet)]">{icon}</div>}
-      <p className="font-mono text-sm uppercase tracking-widest text-[var(--neon-cyan)]/80">
-        {title}
-      </p>
-      {description && (
-        <p className="max-w-sm text-sm text-[var(--muted-foreground)]">
-          {description}
-        </p>
-      )}
-      {action && <div className="pt-1">{action}</div>}
-    </div>
+    <Empty className="rounded-lg border border-dashed border-border">
+      <EmptyHeader>
+        {icon && (
+          <EmptyMedia variant="icon" className="text-neon-violet [&_svg]:size-5">
+            {icon}
+          </EmptyMedia>
+        )}
+        <EmptyTitle className="font-mono uppercase tracking-widest text-neon-cyan/80">
+          {title}
+        </EmptyTitle>
+        {description && <EmptyDescription>{description}</EmptyDescription>}
+      </EmptyHeader>
+      {action && <EmptyContent>{action}</EmptyContent>}
+    </Empty>
   )
 }
 
@@ -112,7 +124,7 @@ const ERROR_COPY: Record<
   },
 }
 
-/** Categorized error state with a concrete recovery step and scoped retry. */
+/** Categorized error state with a concrete recovery step and scoped retry (shadcn Alert). */
 export function ErrorState({
   error,
   retry,
@@ -128,19 +140,14 @@ export function ErrorState({
   const Icon = copy.icon
 
   return (
-    <Card className="border-destructive/30 bg-destructive/5">
-      <CardContent className="flex flex-col items-center gap-3 py-8 text-center">
-        <Icon
-          aria-hidden="true"
-          className="size-8 text-destructive drop-shadow-[0_0_8px_var(--destructive)]"
-        />
-        <p className="font-mono text-sm uppercase tracking-widest text-destructive">
-          {copy.title}
-        </p>
-        <p className="max-w-sm text-sm text-[var(--muted-foreground)]">
-          {copy.recovery}
-        </p>
-        <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+    <Alert variant="destructive" className="border-destructive/30 bg-destructive/5">
+      <Icon aria-hidden="true" className="size-8 drop-shadow-[0_0_8px_var(--destructive)]" />
+      <AlertTitle className="font-mono text-sm uppercase tracking-widest">
+        {copy.title}
+      </AlertTitle>
+      <AlertDescription>{copy.recovery}</AlertDescription>
+      {(retry || onGoToSettings !== undefined) && (
+        <div className="col-start-2 flex flex-wrap items-center gap-2 pt-1">
           {(failureClass === FailureClass.NO_KEY ||
             failureClass === FailureClass.AUTH_FAILED) &&
             onGoToSettings !== undefined && (
@@ -155,8 +162,8 @@ export function ErrorState({
             </Button>
           )}
         </div>
-      </CardContent>
-    </Card>
+      )}
+    </Alert>
   )
 }
 
@@ -211,12 +218,16 @@ export function PanelState<TData>({
   return <>{children}</>
 }
 
-/** Small inline spinner for sub-surface refetches. */
+/** Small inline spinner for sub-surface refetches (shadcn Spinner). */
 export function InlineSpinner({ label = 'Loading' }: { label?: string }) {
   return (
-    <span role="status" aria-label={label} className="inline-flex items-center gap-2">
-      <Loader2 aria-hidden="true" className="size-4 animate-spin text-[var(--neon-cyan)]" />
-      <span className="text-xs text-[var(--muted-foreground)]">{label}…</span>
+    <span
+      role="status"
+      aria-label={label}
+      className={cn('inline-flex items-center gap-2 text-muted-foreground')}
+    >
+      <Spinner aria-hidden="true" className="text-neon-cyan" />
+      <span className="text-xs">{label}…</span>
     </span>
   )
 }
