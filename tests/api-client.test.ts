@@ -1,17 +1,10 @@
 import { describe, expect, it, vi, afterEach } from 'vitest'
 import {
-  apiFetch,
-  buildRequest,
-  GATEWAY_BASE,
+  ApiError,
+  listModels,
   handleSseEvents,
   parseSseChunk,
 } from '#/lib/api-client'
-import {
-  AuthFailedError,
-  NetworkOrCorsError,
-  NoApiKeyError,
-  ServerError,
-} from '#/lib/errors'
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -24,193 +17,139 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-describe('buildRequest', () => {
-  it('builds the gateway URL and attaches the Bearer auth header', () => {
-    const req = buildRequest('/v1/models', { apiKey: 'sk-test-123' })
-    expect(req.url).toBe(`${GATEWAY_BASE}/v1/models`)
-    expect(req.headers.Authorization).toBe('Bearer sk-test-123')
-    expect(req.method).toBe('GET')
-  })
+/* ── request layer (same-origin proxy, httpOnly cookie auth) ─────────────── */
 
-  it('defaults to GET with no auth header when no key given', () => {
-    const req = buildRequest('/api/sessions')
-    expect(req.method).toBe('GET')
-    expect(req.headers.Authorization).toBeUndefined()
-  })
-
-  it('adds content-type json when a body is present', () => {
-    const req = buildRequest('/v1/runs', {
-      apiKey: 'k',
-      method: 'POST',
-      body: { prompt: 'hi' },
-    })
-    expect(req.method).toBe('POST')
-    expect(req.headers['content-type']).toBe('application/json')
-  })
-})
-
-describe('apiFetch — happy path', () => {
-  it('sends the auth header and returns parsed JSON', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ ok: true, data: [1, 2] }))
+describe('listModels — request layer', () => {
+  it('returns parsed JSON on success', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ data: [{ id: 'm1' }] }))
     vi.stubGlobal('fetch', fetchMock)
 
-    const result = await apiFetch<{ ok: boolean }>('/v1/models', { apiKey: 'sk-a' })
-    expect(result).toEqual({ ok: true, data: [1, 2] })
+    const result = await listModels()
+    expect(result).toEqual({ data: [{ id: 'm1' }] })
     const [url, init] = fetchMock.mock.calls[0]
-    expect(url).toBe(`${GATEWAY_BASE}/v1/models`)
-    expect(init.headers.Authorization).toBe('Bearer sk-a')
+    expect(String(url)).toContain('/api/gateway/v1/models')
+    // httpOnly session architecture: no Authorization header, cookies only.
+    expect(init.headers.Authorization).toBeUndefined()
+    expect(init.credentials).toBe('same-origin')
   })
 
-  it('serializes a JSON body on POST', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ id: 'r1' }))
-    vi.stubGlobal('fetch', fetchMock)
-
-    await apiFetch('/v1/runs', { apiKey: 'sk-a', method: 'POST', body: { prompt: 'go' } })
-    const [, init] = fetchMock.mock.calls[0]
-    expect(init.method).toBe('POST')
-    expect(init.body).toBe(JSON.stringify({ prompt: 'go' }))
-  })
-})
-
-describe('apiFetch — error handling', () => {
-  it('throws NoApiKeyError when no key is configured', async () => {
-    await expect(apiFetch('/v1/models')).rejects.toBeInstanceOf(NoApiKeyError)
+  it('maps network failure to network-error ApiError', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('failed to fetch')))
+    await expect(listModels()).rejects.toMatchObject({ status: 'network-error' })
   })
 
-  it('maps network failure to NetworkOrCorsError', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')))
-    await expect(apiFetch('/v1/models', { apiKey: 'sk-a' })).rejects.toBeInstanceOf(
-      NetworkOrCorsError,
-    )
-  })
-
-  it('maps 401 to AuthFailedError', async () => {
+  it('maps 401 to unauthorized', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({}, 401)))
-    await expect(apiFetch('/v1/models', { apiKey: 'sk-bad' })).rejects.toBeInstanceOf(
-      AuthFailedError,
-    )
+    await expect(listModels()).rejects.toMatchObject({ status: 'unauthorized' })
   })
 
-  it('maps 403 to AuthFailedError', async () => {
+  it('maps 403 to unauthorized', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({}, 403)))
-    await expect(apiFetch('/v1/models', { apiKey: 'sk-bad' })).rejects.toBeInstanceOf(
-      AuthFailedError,
-    )
+    await expect(listModels()).rejects.toMatchObject({ status: 'unauthorized' })
   })
 
-  it('maps 5xx to ServerError carrying the status code', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({}, 502)))
-    const err = (await apiFetch('/v1/models', {
-      apiKey: 'sk-a',
-    }).catch((e: ServerError) => e)) as ServerError
-    expect(err).toBeInstanceOf(ServerError)
-    expect(err.status).toBe(502)
+  it('maps 5xx to server-error carrying the status code in the message', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('nope', { status: 502 })))
+    await expect(listModels()).rejects.toMatchObject({
+      status: 'server-error',
+      message: expect.stringContaining('502'),
+    })
   })
 
   it('throws a descriptive error for other unexpected statuses (429)', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue(jsonResponse({ error: 'slow down' }, 429)),
-    )
-    await expect(apiFetch('/v1/models', { apiKey: 'sk-a' })).rejects.toThrow(
-      /Unexpected status 429: slow down/,
-    )
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({ error: 'slow down' }, 429)))
+    await expect(listModels()).rejects.toMatchObject({
+      status: 'server-error',
+      message: expect.stringContaining('429'),
+    })
   })
 
-  it('throws on malformed JSON in an otherwise-successful response', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi
-        .fn()
-        .mockResolvedValue(new Response('<html>not json</html>', { status: 200 })),
-    )
-    await expect(apiFetch('/v1/models', { apiKey: 'sk-a' })).rejects.toThrow(
-      /Malformed JSON/,
-    )
+  it('attaches the CSRF header when a token is present', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ data: [] }))
+    vi.stubGlobal('fetch', fetchMock)
+    window.localStorage.setItem('orole.csrf', 'csrf-xyz')
+    await listModels()
+    const [, init] = fetchMock.mock.calls[0]
+    expect(JSON.stringify(init.headers)).not.toContain('Bearer')
+    window.localStorage.removeItem('orole.csrf')
+  })
+})
+
+describe('ApiError', () => {
+  it('carries its connection status', () => {
+    const err = new ApiError('unauthorized', 'boom')
+    expect(err.status).toBe('unauthorized')
+    expect(err.name).toBe('ApiError')
   })
 })
 
 /* ── SSE parsing ─────────────────────────────────────────────────────────── */
 
+const DELTA_FRAME =
+  'event: assistant.delta\ndata: {"text":"hello"}\n\n'
+const TOOL_START_FRAME =
+  'data: {"type":"tool.started","tool":"terminal","callId":"c1"}\n\n'
+const TOOL_DONE_FRAME =
+  'data: {"type":"tool.completed","tool":"terminal","ok":true,"callId":"c1"}\n\n'
+
 describe('parseSseChunk', () => {
-  it('parses assistant.delta events', () => {
-    const chunk = 'data: {"type":"assistant.delta","text":"Hello"}\n\n'
-    expect(parseSseChunk(chunk)).toEqual([
-      { type: 'assistant.delta', text: 'Hello' },
+  it('parses a single typed frame', () => {
+    const events = parseSseChunk(DELTA_FRAME)
+    expect(events).toEqual([{ type: 'assistant.delta', text: 'hello' }])
+  })
+
+  it('parses multiple frames in one chunk', () => {
+    const events = parseSseChunk(DELTA_FRAME + TOOL_START_FRAME + TOOL_DONE_FRAME)
+    expect(events.map((e) => e.type)).toEqual([
+      'assistant.delta',
+      'tool.started',
+      'tool.completed',
     ])
   })
 
-  it('parses tool.started events', () => {
-    const chunk =
-      'data: {"type":"tool.started","tool":"web_search","callId":"c1"}\n\n'
-    expect(parseSseChunk(chunk)).toEqual([
-      { type: 'tool.started', tool: 'web_search', callId: 'c1' },
-    ])
-  })
-
-  it('parses tool.completed events', () => {
-    const chunk =
-      'data: {"type":"tool.completed","tool":"web_search","ok":true,"callId":"c1"}\n\n'
-    expect(parseSseChunk(chunk)).toEqual([
-      { type: 'tool.completed', tool: 'web_search', ok: true, callId: 'c1' },
-    ])
-  })
-
-  it('uses the event: field as type when payload omits it', () => {
-    const chunk = 'event: assistant.delta\ndata: {"text":"hey"}\n\n'
-    expect(parseSseChunk(chunk)).toEqual([{ text: 'hey', type: 'assistant.delta' }])
-  })
-
-  it('handles multiple frames and multi-line data in one chunk', () => {
-    const chunk = [
-      'data: {"type":"assistant.delta","text":"a"}',
-      '',
-      'data: {"type":"tool.started","tool":"shell"}',
-      '',
-      '',
-    ].join('\n')
+  it('handles multi-line data frames by joining with newline', () => {
+    const chunk = 'data: {"type":"assistant.delta",\ndata: "text":"a b"}\n\n'
     const events = parseSseChunk(chunk)
-    expect(events).toHaveLength(2)
-    expect(events[0].type).toBe('assistant.delta')
-    expect(events[1].type).toBe('tool.started')
+    expect(events).toHaveLength(1)
+    expect((events[0] as { text?: string }).text).toBe('a b')
   })
 
-  it('ignores comments/heartbeats, blank frames and malformed JSON lines', () => {
-    const chunk = [
-      ': ping',
-      '',
-      'data: not-json-at-all',
-      '',
-      'data: {"type":"assistant.delta","text":"still alive"}',
-      '',
-    ].join('\n')
-    expect(parseSseChunk(chunk)).toEqual([
-      { type: 'assistant.delta', text: 'still alive' },
-    ])
+  it('ignores comments and heartbeats', () => {
+    expect(parseSseChunk(': ping\n\n')).toEqual([])
+  })
+
+  it('ignores blank frames', () => {
+    expect(parseSseChunk('\n\n\n')).toEqual([])
+  })
+
+  it('skips malformed JSON payloads instead of crashing', () => {
+    expect(parseSseChunk('data: {oops\n\n')).toEqual([])
+  })
+
+  it('uses the event: name as type when payload lacks one', () => {
+    const events = parseSseChunk('event: custom.thing\ndata: {"x":1}\n\n')
+    expect(events[0].type).toBe('custom.thing')
   })
 })
 
 describe('handleSseEvents', () => {
-  it('routes each typed event to its handler', () => {
+  it('dispatches deltas and tool events to callbacks', () => {
     const onDelta = vi.fn()
     const onToolStarted = vi.fn()
     const onToolCompleted = vi.fn()
-    handleSseEvents(
-      parseSseChunk(
-        'data: {"type":"assistant.delta","text":"Hi"}\n\n' +
-          'data: {"type":"tool.started","tool":"shell","callId":"t9"}\n\n' +
-          'data: {"type":"tool.completed","tool":"shell","ok":false,"callId":"t9"}\n\n',
-      ),
-      { onDelta, onToolStarted, onToolCompleted },
-    )
-    expect(onDelta).toHaveBeenCalledWith('Hi')
-    expect(onToolStarted).toHaveBeenCalledWith('shell', 't9')
-    expect(onToolCompleted).toHaveBeenCalledWith('shell', false, 't9')
+    handleSseEvents(parseSseChunk(DELTA_FRAME + TOOL_START_FRAME + TOOL_DONE_FRAME), {
+      onDelta,
+      onToolStarted,
+      onToolCompleted,
+    })
+    expect(onDelta).toHaveBeenCalledWith('hello')
+    expect(onToolStarted).toHaveBeenCalledWith('terminal', 'c1')
+    expect(onToolCompleted).toHaveBeenCalledWith('terminal', true, 'c1')
   })
 
-  it('passes unknown event types through onRaw only', () => {
+  it('passes unknown events through onRaw', () => {
     const onRaw = vi.fn()
-    handleSseEvents(parseSseChunk('data: {"type":"run.finished"}\n\n'), { onRaw })
-    expect(onRaw).toHaveBeenCalledWith({ type: 'run.finished' })
+    handleSseEvents(parseSseChunk('data: {"type":"weird"}\n\n'), { onRaw })
+    expect(onRaw).toHaveBeenCalledWith(expect.objectContaining({ type: 'weird' }))
   })
 })

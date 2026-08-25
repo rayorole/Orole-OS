@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import ThemeToggle from './ThemeToggle'
+import ConnectionIndicator from './ConnectionIndicator'
 
 export default function Header() {
   return (
@@ -24,11 +24,25 @@ export default function Header() {
             Home
           </Link>
           <Link
-            to="/about"
+            to="/transcript"
             className="nav-link"
             activeProps={{ className: 'nav-link is-active' }}
           >
-            About
+            Transcript
+          </Link>
+          <Link
+            to="/puppet"
+            className="nav-link"
+            activeProps={{ className: 'nav-link is-active' }}
+          >
+            Puppet View
+          </Link>
+          <Link
+            to="/settings"
+            className="nav-link"
+            activeProps={{ className: 'nav-link is-active' }}
+          >
+            Settings
           </Link>
           <a
             href="https://tanstack.com/start/latest/docs/framework/react/overview"
@@ -41,6 +55,7 @@ export default function Header() {
         </div>
 
         <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
+          <ConnectionIndicator />
           <a
             href="https://x.com/tan_stack"
             target="_blank"
@@ -70,7 +85,6 @@ export default function Header() {
             </svg>
           </a>
 
-          <ThemeToggle />
         </div>
       </nav>
     </header>

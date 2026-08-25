@@ -8,7 +8,7 @@ afterEach(() => {
   window.localStorage.clear()
 })
 
-// jsdom lacks matchMedia; components and the theme init script rely on it.
+// jsdom lacks matchMedia; components rely on it.
 if (!window.matchMedia) {
   Object.defineProperty(window, 'matchMedia', {
     writable: true,

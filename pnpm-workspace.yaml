@@ -1,0 +1,6 @@
+minimumReleaseAgeExclude:
+  - '@tanstack/query-core@5.102.3'
+  - '@tanstack/query-devtools@5.102.3'
+  - '@tanstack/react-query-devtools@5.102.3'
+  - '@tanstack/react-query@5.102.3'
+  - lucide-react@1.34.0

@@ -1,80 +1,76 @@
 import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { subscribeSse, type SseEvent } from './api-client'
 
-import { apiFetch, subscribeSse, type SseEvent } from './api-client'
-
-/**
- * Live gateway status probe (dashboard "Core Diagnostics" panel).
- * loading -> success | error via TanStack Query.
- */
-export function useGatewayStatus(apiKey: string | null) {
+/** Cheap authenticated probe of the gateway via the same-origin proxy. */
+export function useGatewayStatus(_apiKey: string | null) {
   return useQuery({
-    queryKey: ['gateway-status', apiKey],
-    queryFn: () => apiFetch('/v1/models', { apiKey }),
-    refetchInterval: 30_000,
+    queryKey: ['gateway-status'],
+    queryFn: async () => {
+      const res = await fetch('/api/gateway/v1/models', { credentials: 'same-origin' })
+      if (res.status === 401 || res.status === 403)
+        throw new Error('unauthorized')
+      if (!res.ok) throw new Error('server-error')
+      return 'connected' as const
+    },
     retry: false,
-    enabled: typeof window !== 'undefined',
+    staleTime: 30_000,
   })
 }
 
-/** Run-history feed for the dashboard activity panel. */
-export function useActivityFeed(apiKey: string | null) {
+export function useActivityFeed(_apiKey: string | null) {
   return useQuery({
-    queryKey: ['activity-feed', apiKey],
-    queryFn: () => apiFetch<unknown[]>('/api/sessions', { apiKey }),
-    refetchInterval: 15_000,
-    retry: false,
-    enabled: typeof window !== 'undefined',
+    queryKey: ['activity-feed'],
+    queryFn: async () => {
+      const res = await fetch('/api/gateway/api/sessions', { credentials: 'same-origin' })
+      if (!res.ok) throw new Error(`status ${res.status}`)
+      return (await res.json()) as unknown[]
+    },
   })
-}
-
-export interface AgentStreamState {
-  events: SseEvent[]
-  text: string
-  isStreaming: boolean
-  error: unknown
 }
 
 /**
- * Subscribe to an agent run's SSE stream. Cleans up (aborts the fetch) on
- * unmount or when the key changes, so no listener outlives its component.
+ * Subscribe to an SSE endpoint through the same-origin proxy. The stream is
+ * torn down and re-established when path or enabled changes.
  */
-export function useAgentStream(
-  path: string,
-  apiKey: string | null,
-): AgentStreamState {
-  const [state, setState] = useState<AgentStreamState>({
-    events: [],
-    text: '',
-    isStreaming: true,
-    error: null,
-  })
+export function useAgentStream({
+  path,
+  enabled = true,
+  onDelta,
+  onToolStarted,
+  onToolCompleted,
+}: {
+  path: string
+  enabled?: boolean
+  apiKey?: string | null
+  onDelta?: (text: string) => void
+  onToolStarted?: (tool: string, callId?: string) => void
+  onToolCompleted?: (tool: string, ok?: boolean, callId?: string) => void
+}) {
+  const [lastError, setLastError] = useState<unknown>(null)
 
   useEffect(() => {
-    if (!apiKey) {
-      setState({ events: [], text: '', isStreaming: false, error: null })
+    if (!enabled || !path) {
+      setLastError(null)
       return
     }
     let cancelled = false
-    setState((s) => ({ ...s, isStreaming: true }))
-
-    const unsubscribe = subscribeSse(path, apiKey, {
-      onDelta: (text) =>
-        !cancelled &&
-        setState((s) => ({ ...s, text: s.text + text })),
-      onRaw: (event) =>
-        !cancelled &&
-        setState((s) => ({ ...s, events: [...s.events, event] })),
-      onError: (err) =>
-        !cancelled && setState((s) => ({ ...s, error: err, isStreaming: false })),
+    const unsubscribe = subscribeSse(path, null, {
+      onDelta: (t) => !cancelled && onDelta?.(t),
+      onToolStarted: (tool, callId) => !cancelled && onToolStarted?.(tool, callId),
+      onToolCompleted: (tool, ok, callId) =>
+        !cancelled && onToolCompleted?.(tool, ok, callId),
+      onError: (err) => !cancelled && setLastError(err),
     })
-
     return () => {
       cancelled = true
       unsubscribe()
-      setState((s) => ({ ...s, isStreaming: false }))
     }
-  }, [path, apiKey])
+    // Handlers are read at effect setup; callers pass stable callbacks.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [path, enabled])
 
-  return state
+  return { lastError }
 }
+
+export type { SseEvent }

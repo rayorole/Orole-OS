@@ -14,19 +14,27 @@ export const Route = createFileRoute('/agents/$agentId')({
   component: AgentTranscript,
 })
 
-function getApiKey(): string | null {
-  try {
-    return window.localStorage.getItem('orole.apiKey')
-  } catch {
-    return null
-  }
+type ToolEvent = {
+  type: string
+  tool?: string
+  callId?: string
+  ok?: boolean
 }
 
 /** Live transcript view for one agent's current run. */
 function AgentTranscript() {
   const { agentId } = Route.useParams()
-  const apiKey = getApiKey()
-  const stream = useAgentStream(`/api/agents/${agentId}/events`, apiKey)
+  const [text, setText] = useState('')
+  const [events, setEvents] = useState<ToolEvent[]>([])
+  const stream = useAgentStream({
+    path: `/api/gateway/api/agents/${agentId}/events`,
+    onDelta: (t) => setText((prev) => prev + t),
+    onToolStarted: (tool, callId) =>
+      setEvents((prev) => [...prev, { type: 'tool.started', tool, callId }]),
+    onToolCompleted: (tool, ok, callId) =>
+      setEvents((prev) => [...prev, { type: 'tool.completed', tool, ok, callId }]),
+  })
+  const isStreaming = !stream.lastError
   const [mountedAt] = useState(() => new Date().toISOString())
 
   useEffect(() => {
@@ -43,7 +51,7 @@ function AgentTranscript() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {stream.error ? (
+          {stream.lastError ? (
             <p role="alert" className="font-mono text-sm text-destructive">
               stream unavailable
             </p>
@@ -53,15 +61,15 @@ function AgentTranscript() {
               aria-live="polite"
               className="space-y-2 font-mono text-sm"
             >
-              {stream.text && <li>{stream.text}</li>}
-              {stream.events
+              {text && <li>{text}</li>}
+              {events
                 .filter((e) => e.type.startsWith('tool.'))
                 .map((e, i) => (
                   <li key={i} data-testid="tool-event">
-                    {e.type}: {(e as { tool?: string }).tool}
+                    {e.type}: {e.tool}
                   </li>
                 ))}
-              {!stream.isStreaming && !stream.text && (
+              {!isStreaming && !text && (
                 <li className="text-[var(--muted-foreground)]">no activity</li>
               )}
             </ul>

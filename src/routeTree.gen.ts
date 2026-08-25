@@ -10,19 +10,21 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AboutRouteImport } from './routes/about'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
+import { Route as CostsRouteImport } from './routes/costs'
+import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as HeatmapRouteImport } from './routes/heatmap'
+import { Route as LeaderboardsRouteImport } from './routes/leaderboards'
+import { Route as PuppetRouteImport } from './routes/puppet'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as StarmapRouteImport } from './routes/starmap'
+import { Route as TranscriptRouteImport } from './routes/transcript'
 import { Route as AgentsAgentIdRouteImport } from './routes/agents.$agentId'
+import { Route as RunsRunIdRouteImport } from './routes/runs.$runId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AboutRoute = AboutRouteImport.update({
-  id: '/about',
-  path: '/about',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AnalyticsRoute = AnalyticsRouteImport.update({
@@ -30,9 +32,44 @@ const AnalyticsRoute = AnalyticsRouteImport.update({
   path: '/analytics',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CostsRoute = CostsRouteImport.update({
+  id: '/costs',
+  path: '/costs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HeatmapRoute = HeatmapRouteImport.update({
+  id: '/heatmap',
+  path: '/heatmap',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LeaderboardsRoute = LeaderboardsRouteImport.update({
+  id: '/leaderboards',
+  path: '/leaderboards',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PuppetRoute = PuppetRouteImport.update({
+  id: '/puppet',
+  path: '/puppet',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StarmapRoute = StarmapRouteImport.update({
+  id: '/starmap',
+  path: '/starmap',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TranscriptRoute = TranscriptRouteImport.update({
+  id: '/transcript',
+  path: '/transcript',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AgentsAgentIdRoute = AgentsAgentIdRouteImport.update({
@@ -40,49 +77,113 @@ const AgentsAgentIdRoute = AgentsAgentIdRouteImport.update({
   path: '/agents/$agentId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RunsRunIdRoute = RunsRunIdRouteImport.update({
+  id: '/runs/$runId',
+  path: '/runs/$runId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/about': typeof AboutRoute
   '/analytics': typeof AnalyticsRoute
+  '/costs': typeof CostsRoute
+  '/dashboard': typeof DashboardRoute
+  '/heatmap': typeof HeatmapRoute
+  '/leaderboards': typeof LeaderboardsRoute
+  '/puppet': typeof PuppetRoute
   '/settings': typeof SettingsRoute
+  '/starmap': typeof StarmapRoute
+  '/transcript': typeof TranscriptRoute
   '/agents/$agentId': typeof AgentsAgentIdRoute
+  '/runs/$runId': typeof RunsRunIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/about': typeof AboutRoute
   '/analytics': typeof AnalyticsRoute
+  '/costs': typeof CostsRoute
+  '/dashboard': typeof DashboardRoute
+  '/heatmap': typeof HeatmapRoute
+  '/leaderboards': typeof LeaderboardsRoute
+  '/puppet': typeof PuppetRoute
   '/settings': typeof SettingsRoute
+  '/starmap': typeof StarmapRoute
+  '/transcript': typeof TranscriptRoute
   '/agents/$agentId': typeof AgentsAgentIdRoute
+  '/runs/$runId': typeof RunsRunIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/about': typeof AboutRoute
   '/analytics': typeof AnalyticsRoute
+  '/costs': typeof CostsRoute
+  '/dashboard': typeof DashboardRoute
+  '/heatmap': typeof HeatmapRoute
+  '/leaderboards': typeof LeaderboardsRoute
+  '/puppet': typeof PuppetRoute
   '/settings': typeof SettingsRoute
+  '/starmap': typeof StarmapRoute
+  '/transcript': typeof TranscriptRoute
   '/agents/$agentId': typeof AgentsAgentIdRoute
+  '/runs/$runId': typeof RunsRunIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about' | '/analytics' | '/settings' | '/agents/$agentId'
+  fullPaths:
+    | '/'
+    | '/analytics'
+    | '/costs'
+    | '/dashboard'
+    | '/heatmap'
+    | '/leaderboards'
+    | '/puppet'
+    | '/settings'
+    | '/starmap'
+    | '/transcript'
+    | '/agents/$agentId'
+    | '/runs/$runId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/analytics' | '/settings' | '/agents/$agentId'
+  to:
+    | '/'
+    | '/analytics'
+    | '/costs'
+    | '/dashboard'
+    | '/heatmap'
+    | '/leaderboards'
+    | '/puppet'
+    | '/settings'
+    | '/starmap'
+    | '/transcript'
+    | '/agents/$agentId'
+    | '/runs/$runId'
   id:
     | '__root__'
     | '/'
-    | '/about'
     | '/analytics'
+    | '/costs'
+    | '/dashboard'
+    | '/heatmap'
+    | '/leaderboards'
+    | '/puppet'
     | '/settings'
+    | '/starmap'
+    | '/transcript'
     | '/agents/$agentId'
+    | '/runs/$runId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AboutRoute: typeof AboutRoute
   AnalyticsRoute: typeof AnalyticsRoute
+  CostsRoute: typeof CostsRoute
+  DashboardRoute: typeof DashboardRoute
+  HeatmapRoute: typeof HeatmapRoute
+  LeaderboardsRoute: typeof LeaderboardsRoute
+  PuppetRoute: typeof PuppetRoute
   SettingsRoute: typeof SettingsRoute
+  StarmapRoute: typeof StarmapRoute
+  TranscriptRoute: typeof TranscriptRoute
   AgentsAgentIdRoute: typeof AgentsAgentIdRoute
+  RunsRunIdRoute: typeof RunsRunIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -94,18 +195,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/about': {
-      id: '/about'
-      path: '/about'
-      fullPath: '/about'
-      preLoaderRoute: typeof AboutRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/analytics': {
       id: '/analytics'
       path: '/analytics'
       fullPath: '/analytics'
       preLoaderRoute: typeof AnalyticsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/costs': {
+      id: '/costs'
+      path: '/costs'
+      fullPath: '/costs'
+      preLoaderRoute: typeof CostsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/heatmap': {
+      id: '/heatmap'
+      path: '/heatmap'
+      fullPath: '/heatmap'
+      preLoaderRoute: typeof HeatmapRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/leaderboards': {
+      id: '/leaderboards'
+      path: '/leaderboards'
+      fullPath: '/leaderboards'
+      preLoaderRoute: typeof LeaderboardsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/puppet': {
+      id: '/puppet'
+      path: '/puppet'
+      fullPath: '/puppet'
+      preLoaderRoute: typeof PuppetRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings': {
@@ -115,6 +244,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/starmap': {
+      id: '/starmap'
+      path: '/starmap'
+      fullPath: '/starmap'
+      preLoaderRoute: typeof StarmapRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/transcript': {
+      id: '/transcript'
+      path: '/transcript'
+      fullPath: '/transcript'
+      preLoaderRoute: typeof TranscriptRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/agents/$agentId': {
       id: '/agents/$agentId'
       path: '/agents/$agentId'
@@ -122,15 +265,29 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AgentsAgentIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/runs/$runId': {
+      id: '/runs/$runId'
+      path: '/runs/$runId'
+      fullPath: '/runs/$runId'
+      preLoaderRoute: typeof RunsRunIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AboutRoute: AboutRoute,
   AnalyticsRoute: AnalyticsRoute,
+  CostsRoute: CostsRoute,
+  DashboardRoute: DashboardRoute,
+  HeatmapRoute: HeatmapRoute,
+  LeaderboardsRoute: LeaderboardsRoute,
+  PuppetRoute: PuppetRoute,
   SettingsRoute: SettingsRoute,
+  StarmapRoute: StarmapRoute,
+  TranscriptRoute: TranscriptRoute,
   AgentsAgentIdRoute: AgentsAgentIdRoute,
+  RunsRunIdRoute: RunsRunIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

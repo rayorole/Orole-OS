@@ -231,3 +231,29 @@ Files prefixed with `demo` can be safely deleted. They are there to provide a st
 You can learn more about all of the offerings from TanStack in the [TanStack documentation](https://tanstack.com).
 
 For TanStack Start specific documentation, visit [TanStack Start](https://tanstack.com/start).
+
+# Auth & Settings
+
+Orole-OS is single-user and BYO-key. Paste your OpenAI-compatible API key on
+the `/settings` page; it is stored **only** in your browser's
+`localStorage` (key `orole.apiKey`) and sent exclusively as
+`Authorization: Bearer <key>` to the configured backend base URL
+(default `https://os.orole.be`). It is never transmitted anywhere else,
+logged, or included in error reports.
+
+## Backend CORS configuration
+
+Browser clients need the API to return these headers. Restrict the origin to
+your panel's deployment origin — do not use `*`, since `Authorization`
+carries a credential:
+
+```
+Access-Control-Allow-Origin: http://localhost:3000        # panel's exact origin
+Access-Control-Allow-Headers: Authorization, Content-Type
+Access-Control-Allow-Methods: GET, POST, OPTIONS
+Access-Control-Max-Age: 86400                            # cache preflights for a day
+```
+
+If the panel is served from a subdomain of the API host in production, CORS
+may not apply there — but it always matters in local development where ports
+differ.

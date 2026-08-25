@@ -3,7 +3,14 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* ── Orole-OS dark sci-fi theme tokens (Tailwind v4 @theme) ── */
+/* ─────────────────────────────────────────────────────────────
+   Orole-OS HUD design system — dark-mode-first, single theme.
+   Palette: deep space neutrals + neon cyan (primary) +
+   plasma violet (secondary). Status colors are standardized:
+   running=green, pending=amber, failed=red, idle=muted.
+   See docs/design-system.md.
+   ───────────────────────────────────────────────────────────── */
+
 :root {
   --radius: 0.625rem;
 
@@ -23,14 +30,13 @@
   --secondary: oklch(0.55 0.18 300);
   --secondary-foreground: oklch(0.95 0.01 300);
 
-  /* Reactor green for muted accents */
   --muted: oklch(0.24 0.02 255);
   --muted-foreground: oklch(0.68 0.02 220);
 
   --accent: oklch(0.3 0.05 210);
   --accent-foreground: oklch(0.9 0.04 190);
 
-  /* Alert amber / destructive magenta */
+  /* Failed = red */
   --destructive: oklch(0.63 0.22 25);
   --destructive-foreground: oklch(0.98 0.01 25);
 
@@ -38,10 +44,37 @@
   --input: oklch(1 0 0 / 14%);
   --ring: oklch(0.82 0.16 195 / 60%);
 
-  /* Sci-fi extras usable as text-primary etc. via arbitrary values */
+  /* Status tokens — standardized across the app */
+  --status-running: oklch(0.78 0.19 155);        /* green  */
+  --status-running-glow: oklch(0.78 0.19 155 / 45%);
+  --status-pending: oklch(0.8 0.16 80);          /* amber  */
+  --status-pending-glow: oklch(0.8 0.16 80 / 40%);
+  --status-failed: var(--destructive);           /* red    */
+  --status-failed-glow: oklch(0.63 0.22 25 / 45%);
+  --status-idle: var(--muted-foreground);        /* muted  */
+  --status-idle-glow: transparent;
+
+  /* Sci-fi extras usable as text-neon-cyan etc. via @theme mapping */
   --neon-cyan: oklch(0.85 0.16 190);
   --neon-violet: oklch(0.65 0.22 300);
   --grid-glow: oklch(0.7 0.12 195 / 35%);
+
+  /* Chart series (analytics inherits these) */
+  --chart-1: oklch(0.82 0.16 195);
+  --chart-2: oklch(0.65 0.22 300);
+  --chart-3: oklch(0.78 0.19 155);
+  --chart-4: oklch(0.8 0.16 80);
+  --chart-5: oklch(0.63 0.22 25);
+
+  /* Sidebar tokens (shadcn parity) */
+  --sidebar: oklch(0.165 0.022 262);
+  --sidebar-foreground: oklch(0.93 0.02 200);
+  --sidebar-primary: oklch(0.82 0.16 195);
+  --sidebar-primary-foreground: oklch(0.15 0.03 250);
+  --sidebar-accent: oklch(0.24 0.03 255);
+  --sidebar-accent-foreground: oklch(0.9 0.04 190);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.82 0.16 195 / 60%);
 }
 
 @theme inline {
@@ -64,10 +97,32 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-status-running: var(--status-running);
+  --color-status-pending: var(--status-pending);
+  --color-status-failed: var(--status-failed);
+  --color-status-idle: var(--status-idle);
   --color-neon-cyan: var(--neon-cyan);
   --color-neon-violet: var(--neon-violet);
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  /* Intentional HUD type pair: Geist for UI, JetBrains Mono for data/terminal. */
+  --font-sans:
+    "Geist", "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono:
+    "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -79,13 +134,41 @@
     border-color: var(--color-border);
     outline-color: color-mix(in oklab, var(--color-ring) 50%, transparent);
   }
+
+  html {
+    color-scheme: dark;
+  }
+
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
     background-image:
-      radial-gradient(ellipse 80% 50% at 50% -10%, oklch(0.35 0.08 220 / 40%), transparent),
+      radial-gradient(
+        ellipse 80% 50% at 50% -10%,
+        oklch(0.35 0.08 220 / 40%),
+        transparent
+      ),
       linear-gradient(oklch(1 0 0 / 2%) 1px, transparent 1px),
       linear-gradient(90deg, oklch(1 0 0 / 2%) 1px, transparent 1px);
     background-size: auto, 48px 48px, 48px 48px;
+    font-family: var(--font-sans);
+  }
+}
+
+@layer components {
+  /* HUD layout helpers used across routes */
+  .hud-page {
+    margin-inline: auto;
+    width: 100%;
+    max-width: 72rem;
+    padding-inline: 1.5rem;
+  }
+
+  .hud-panel-title {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
   }
 }
