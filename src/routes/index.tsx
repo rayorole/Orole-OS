@@ -2,7 +2,6 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { Radio } from 'lucide-react'
 
-import { AgentActivityFeed } from '#/components/AgentActivityFeed'
 import { Button } from '#/components/ui/button'
 import {
   Card,
