@@ -27,6 +27,7 @@
     "@tanstack/react-router-devtools": "latest",
     "@tanstack/react-start": "latest",
     "@tanstack/react-virtual": "^3.14.10",
+    "@types/three": "^0.185.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "jsdom": "^30.0.1",
