@@ -10,6 +10,26 @@ import {
   CardTitle,
 } from '#/components/ui/card'
 import { Badge, StatusDot } from '#/components/ui/badge'
+import { Alert, AlertDescription, AlertTitle } from '#/components/ui/alert'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '#/components/ui/alert-dialog'
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '#/components/ui/empty'
+import { Input } from '#/components/ui/input'
 import { useApprovals, type InboxStatus } from '#/lib/use-approvals'
 import type { PendingApproval } from '#/lib/approvals'
 
@@ -89,52 +109,60 @@ function ApprovalCard({
           </span>
         </div>
 
-        {denyOpen ? (
-          <div className="flex flex-col gap-2">
-            <input
-              aria-label="Deny reason"
-              className="rounded-md border border-border bg-background px-3 py-2 font-mono text-xs text-foreground outline-none focus:border-primary"
-              placeholder="optional reason for the agent…"
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-            />
-            <div className="flex gap-2">
-              <Button
-                variant="destructive"
-                size="sm"
-                disabled={busy}
-                onClick={() => {
-                  setDenyOpen(false)
-                  onDecide(approval.runId, 'deny', reason || undefined)
-                  setReason('')
-                }}
-              >
-                Confirm deny
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            disabled={busy}
+            onClick={() => onDecide(approval.runId, 'once')}
+          >
+            {inFlightChoice === 'once' ? 'Approving…' : 'Approve'}
+          </Button>
+
+          {/* Destructive confirmation via AlertDialog. */}
+          <AlertDialog
+            open={denyOpen}
+            onOpenChange={(open) => {
+              setDenyOpen(open)
+              if (!open) setReason('')
+            }}
+          >
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" size="sm" disabled={busy}>
+                Deny
               </Button>
-              <Button variant="ghost" size="sm" onClick={() => setDenyOpen(false)}>
-                Cancel
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <div className="flex gap-2">
-            <Button
-              size="sm"
-              disabled={busy}
-              onClick={() => onDecide(approval.runId, 'once')}
-            >
-              {inFlightChoice === 'once' ? 'Approving…' : 'Approve'}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={busy}
-              onClick={() => onDecide(approval.runId, 'deny')}
-            >
-              Deny
-            </Button>
-          </div>
-        )}
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Deny this request?</AlertDialogTitle>
+                <AlertDialogDescription className="font-mono">
+                  The agent will be told its command was rejected.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <Input
+                aria-label="Deny reason"
+                className="font-mono text-xs"
+                placeholder="optional reason for the agent…"
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+              />
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  variant="destructive"
+                  disabled={busy}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    setDenyOpen(false)
+                    onDecide(approval.runId, 'deny', reason || undefined)
+                    setReason('')
+                  }}
+                >
+                  Confirm deny
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       </CardContent>
     </Card>
   )
@@ -175,31 +203,35 @@ function ApprovalsInbox() {
       </div>
 
       {lastError ? (
-        <div role="alert" className="flex items-center justify-between rounded-md border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-status-failed">
-          <span>{lastError}</span>
-          <span className="font-mono text-xs text-muted-foreground">
+        <Alert variant="destructive" className="border-destructive/40 bg-destructive/10">
+          <AlertTitle>{lastError}</AlertTitle>
+          <AlertDescription className="font-mono text-xs text-muted-foreground">
             the card was restored — try again
-          </span>
-        </div>
+          </AlertDescription>
+        </Alert>
       ) : null}
       {decidedNote ? (
-        <div role="status" aria-live="polite" className="rounded-md border border-border bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
-          {decidedNote}
-        </div>
+        <Alert aria-live="polite" className="border-border bg-muted/30">
+          <AlertDescription className="text-muted-foreground">
+            {decidedNote}
+          </AlertDescription>
+        </Alert>
       ) : null}
 
       {approvals.length === 0 ? (
-        <Card className="border-dashed py-10">
-          <CardContent className="flex flex-col items-center gap-2 text-center">
-            <StatusDot status="running" />
-            <p className="font-mono text-sm text-foreground">
+        <Empty className="border-border py-10">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <StatusDot status="running" />
+            </EmptyMedia>
+            <EmptyTitle className="font-mono text-sm text-foreground">
               No pending approvals — all clear
-            </p>
-            <p className="text-xs text-muted-foreground">
+            </EmptyTitle>
+            <EmptyDescription>
               New requests appear here the moment an agent needs a decision.
-            </p>
-          </CardContent>
-        </Card>
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
       ) : (
         <section
           aria-label="Pending approvals"
