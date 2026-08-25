@@ -10,43 +10,73 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as StarmapRouteImport } from './routes/starmap'
+import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as PuppetRouteImport } from './routes/puppet'
+import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as TranscriptRouteImport } from './routes/transcript'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const StarmapRoute = StarmapRouteImport.update({
-  id: '/starmap',
-  path: '/starmap',
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PuppetRoute = PuppetRouteImport.update({
+  id: '/puppet',
+  path: '/puppet',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TranscriptRoute = TranscriptRouteImport.update({
+  id: '/transcript',
+  path: '/transcript',
   getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/starmap': typeof StarmapRoute
+  '/dashboard': typeof DashboardRoute
+  '/puppet': typeof PuppetRoute
+  '/settings': typeof SettingsRoute
+  '/transcript': typeof TranscriptRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/starmap': typeof StarmapRoute
+  '/dashboard': typeof DashboardRoute
+  '/puppet': typeof PuppetRoute
+  '/settings': typeof SettingsRoute
+  '/transcript': typeof TranscriptRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/starmap': typeof StarmapRoute
+  '/dashboard': typeof DashboardRoute
+  '/puppet': typeof PuppetRoute
+  '/settings': typeof SettingsRoute
+  '/transcript': typeof TranscriptRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/starmap'
+  fullPaths: '/' | '/dashboard' | '/puppet' | '/settings' | '/transcript'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/starmap'
-  id: '__root__' | '/' | '/starmap'
+  to: '/' | '/dashboard' | '/puppet' | '/settings' | '/transcript'
+  id: '__root__' | '/' | '/dashboard' | '/puppet' | '/settings' | '/transcript'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  StarmapRoute: typeof StarmapRoute
+  DashboardRoute: typeof DashboardRoute
+  PuppetRoute: typeof PuppetRoute
+  SettingsRoute: typeof SettingsRoute
+  TranscriptRoute: typeof TranscriptRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -58,11 +88,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/starmap': {
-      id: '/starmap'
-      path: '/starmap'
-      fullPath: '/starmap'
-      preLoaderRoute: typeof StarmapRouteImport
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/puppet': {
+      id: '/puppet'
+      path: '/puppet'
+      fullPath: '/puppet'
+      preLoaderRoute: typeof PuppetRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/transcript': {
+      id: '/transcript'
+      path: '/transcript'
+      fullPath: '/transcript'
+      preLoaderRoute: typeof TranscriptRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -70,7 +121,10 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  StarmapRoute: StarmapRoute,
+  DashboardRoute: DashboardRoute,
+  PuppetRoute: PuppetRoute,
+  SettingsRoute: SettingsRoute,
+  TranscriptRoute: TranscriptRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
