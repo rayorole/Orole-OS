@@ -29,6 +29,7 @@ export const Route = createRootRoute({
 
 const NAV = [
   { to: '/', label: 'Mission Control' },
+  { to: '/starmap', label: 'Star Map' },
 ] as const
 
 function RootDocument({ children }: { children: React.ReactNode }) {
