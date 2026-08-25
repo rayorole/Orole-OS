@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 
+import { AgentActivityFeed } from '#/components/AgentActivityFeed'
 import { Button } from '#/components/ui/button'
 import {
   Card,
@@ -42,6 +43,8 @@ function Home() {
           routing, and server state in one rig.
         </p>
       </div>
+
+      <AgentActivityFeed />
 
       <Card className="w-full border-neon-cyan/20 shadow-[0_0_32px_var(--grid-glow)]">
         <CardHeader>
