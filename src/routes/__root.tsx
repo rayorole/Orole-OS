@@ -14,7 +14,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '#/components/ui/dropdown-menu'
 import { Separator } from '#/components/ui/separator'
@@ -49,12 +48,17 @@ export const Route = createRootRoute({
 
 const NAV = [
   { to: '/', label: 'Mission Control' },
+  { to: '/dashboard', label: 'Dashboard' },
   { to: '/puppet', label: 'Puppet View' },
+  { to: '/analytics', label: 'Analytics' },
+  { to: '/costs', label: 'Costs' },
+  { to: '/approvals', label: 'Approvals' },
+  { to: '/settings', label: 'Settings' },
 ] as const
 
 const EXTERNAL_LINKS = [
-  { href: 'https://tanstack.com/start/latest/docs/framework/react/overview', label: 'Docs' },
-  { href: 'https://github.com/TanStack', label: 'GitHub' },
+  { href: 'https://github.com/rayorole/Orole-OS', label: 'GitHub' },
+  { href: 'https://os.orole.be', label: 'Gateway' },
 ] as const
 
 /** Renders the text chat overlay while in backup (text) mode. */
@@ -85,7 +89,8 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                 >
                   <Link
                     to="/"
-                    className="flex items-center gap-2.5 no-underline"
+                    aria-label="Orole-OS home"
+                    className="hud-corner-accent flex items-center gap-2.5 px-2 py-1 no-underline"
                     activeOptions={{ exact: true }}
                   >
                     <span className="relative inline-flex size-2.5 rounded-full bg-status-running shadow-[0_0_10px_var(--status-running-glow)] motion-safe:animate-pulse" />
@@ -102,11 +107,11 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                             to={item.to}
                             activeProps={{
                               className:
-                                'font-mono text-xs uppercase tracking-[0.2em] text-neon-cyan no-underline',
+                                'font-mono text-xs uppercase tracking-[0.2em] text-neon-cyan no-underline outline-none focus-visible:text-neon-cyan',
                             }}
                             inactiveProps={{
                               className:
-                                'font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground no-underline transition-colors hover:text-foreground',
+                                'font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground no-underline transition-colors hover:text-foreground focus-visible:text-foreground',
                             }}
                           >
                             {({ isActive }) => (
@@ -139,7 +144,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                           Resources ▾
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
+                      <DropdownMenuContent align="end" className="hud-corner-accent">
                         <DropdownMenuLabel className="font-mono text-xs uppercase tracking-widest">
                           External
                         </DropdownMenuLabel>
@@ -149,21 +154,13 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                               href={link.href}
                               target="_blank"
                               rel="noreferrer"
+                              aria-label={`${link.label} (opens in a new tab)`}
                               className="font-mono text-xs uppercase tracking-wider"
                             >
                               {link.label}
                             </a>
                           </DropdownMenuItem>
                         ))}
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem asChild>
-                          <Link
-                            to="/settings"
-                            className="font-mono text-xs uppercase tracking-wider"
-                          >
-                            Settings
-                          </Link>
-                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>

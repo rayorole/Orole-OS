@@ -185,4 +185,34 @@
     text-transform: uppercase;
     color: var(--muted-foreground);
   }
+
+  /* Subtle HUD corner accents for panels/cards. Decorative only:
+     pseudo-elements, so they stay invisible to screen readers. */
+  .hud-corner-accent {
+    position: relative;
+  }
+
+  .hud-corner-accent::before,
+  .hud-corner-accent::after {
+    content: '';
+    position: absolute;
+    width: 0.75rem;
+    height: 0.75rem;
+    border-color: color-mix(in oklab, var(--neon-cyan) 55%, transparent);
+    pointer-events: none;
+  }
+
+  .hud-corner-accent::before {
+    top: -1px;
+    left: -1px;
+    border-top: 1px solid;
+    border-left: 1px solid;
+  }
+
+  .hud-corner-accent::after {
+    right: -1px;
+    bottom: -1px;
+    border-right: 1px solid;
+    border-bottom: 1px solid;
+  }
 }
