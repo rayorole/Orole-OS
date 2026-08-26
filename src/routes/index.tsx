@@ -1,17 +1,12 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
-import { Radio } from 'lucide-react'
 
 import { Button } from '#/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '#/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#/components/ui/card'
+import { Badge, StatusDot } from '#/components/ui/badge'
 import { PanelErrorBoundary } from '#/components/panel-error-boundary'
-import { EmptyState, ErrorState, LoadingState, PanelState } from '#/components/states'
+import { PanelState } from '#/components/states'
+import { FailureClass, classifyFailure } from '#/lib/errors'
 
 export const Route = createFileRoute('/')({
   component: Home,
@@ -49,7 +44,7 @@ function getApiKey(): string | null {
   }
 }
 
-/** Gateway reachability probe — the panel's primary async surface. */
+/** Gateway reachability probe — shared by the status strip and the feed. */
 function useGatewayStatus() {
   return useQuery({
     queryKey: ['gateway-status'],
@@ -60,32 +55,89 @@ function useGatewayStatus() {
   })
 }
 
-function GatewayPanel() {
+/* ── Mission-control hero ──────────────────────────────────────────────── */
+
+/**
+ * Compact live status strip: gateway link + agent feed health at a glance.
+ * Replaces the old standalone "Core Diagnostics" placeholder card.
+ */
+type StripStatus = 'running' | 'pending' | 'failed' | 'idle'
+
+const STRIP_COPY: Record<StripStatus, string> = {
+  running: 'gateway online · os.orole.be',
+  pending: 'establishing uplink…',
+  failed: 'uplink lost — check settings',
+  idle: 'standby',
+}
+
+function stripStatus(query: {
+  isPending: boolean
+  isError: boolean
+}): StripStatus {
+  if (query.isPending) return 'pending'
+  if (query.isError) return 'failed'
+  return 'running'
+}
+
+function failureLabel(error: unknown): string {
+  switch (classifyFailure(error)) {
+    case FailureClass.NO_KEY:
+      return 'no api key connected'
+    case FailureClass.AUTH_FAILED:
+      return 'api key rejected'
+    case FailureClass.NETWORK_OR_CORS:
+      return 'gateway unreachable'
+    case FailureClass.SERVER_ERROR:
+      return 'gateway server error'
+    default:
+      return 'unknown fault'
+  }
+}
+
+function GatewayStatusStrip() {
   const query = useGatewayStatus()
+  const status = stripStatus(query)
+  const label =
+    status === 'failed' ? failureLabel(query.error) : STRIP_COPY[status]
+
   return (
-    <Card className="w-full border-neon-cyan/20 shadow-[0_0_32px_var(--grid-glow)]">
-      <CardHeader>
-        <CardTitle>Core Diagnostics</CardTitle>
-        <CardDescription>Live link to os.orole.be.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <PanelState
-          query={query}
-          isEmpty={() => false}
-        >
-          <div className="flex items-center gap-2">
-            <span className="size-2 animate-pulse rounded-full bg-primary shadow-[0_0_8px_var(--neon-cyan)]" />
-            <span className="font-mono text-neon-cyan/80">
-              all subsystems nominal
-            </span>
-          </div>
-        </PanelState>
-      </CardContent>
-    </Card>
+    <div
+      data-testid="gateway-status-strip"
+      className="inline-flex items-center gap-3 rounded-full border border-border bg-card/60 px-4 py-1.5 font-mono text-xs"
+    >
+      <StatusDot status={status} />
+      <Badge variant={status} className="uppercase tracking-widest">
+        {status}
+      </Badge>
+      <span aria-live="polite" className="text-muted-foreground">
+        {label}
+      </span>
+    </div>
   )
 }
 
-/** Run-history feed — demonstrates the inviting empty state. */
+function Hero() {
+  return (
+    <header className="flex flex-col items-center gap-6 text-center">
+      <p className="hud-panel-title text-neon-cyan">mission control</p>
+      <h1 className="text-5xl font-bold tracking-tight text-foreground md:text-6xl">
+        Orole<span className="text-neon-cyan drop-shadow-[0_0_16px_var(--neon-cyan-glow,_transparent)]">-</span>
+        OS
+      </h1>
+      <p className="max-w-xl text-balance text-muted-foreground">
+        The operating shell for your agent fleet — live runs, costs, and
+        control surfaces in one dark HUD.
+      </p>
+      <PanelErrorBoundary region="gateway-status">
+        <GatewayStatusStrip />
+      </PanelErrorBoundary>
+    </header>
+  )
+}
+
+/* ── Real activity feed ────────────────────────────────────────────────── */
+
+/** Run-history feed — real sessions streamed from the gateway. */
 function ActivityFeed() {
   const query = useQuery({
     queryKey: ['activity-feed'],
@@ -116,7 +168,7 @@ function ActivityFeed() {
           >
             <ul aria-live="polite" className="space-y-2 font-mono text-sm">
               {(Array.isArray(query.data) ? query.data : []).map((item, i) => (
-                <li key={i} className="text-[var(--muted-foreground)]">
+                <li key={i} className="text-muted-foreground">
                   {typeof item === 'string' ? item : JSON.stringify(item)}
                 </li>
               ))}
@@ -128,48 +180,11 @@ function ActivityFeed() {
   )
 }
 
-/** Standalone error-state demo surface (renders each class explicitly). */
-function StateShowcase() {
-  const demo = new Error('demo')
-  return (
-    <div className="grid w-full gap-4 sm:grid-cols-2">
-      <EmptyState
-        icon={<Radio aria-hidden="true" className="size-6" />}
-        title="signal clear"
-        description="All feeds connected. This is the resting state of a healthy panel."
-      />
-      <LoadingState label="Scanning" rows={2} />
-      {/* Rendered via ErrorState so each recovery message is exercised */}
-      <div aria-live="polite">
-        <ErrorState error={demo} retry={() => {}} onGoToSettings={() => {}} />
-      </div>
-    </div>
-  )
-}
-
 function Home() {
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col items-center gap-10 px-6 py-20">
-      <div className="space-y-3 text-center">
-        <p className="font-mono text-xs uppercase tracking-[0.35em] text-neon-violet">
-          system online
-        </p>
-        <h1 className="bg-gradient-to-r from-neon-cyan via-foreground to-neon-violet bg-clip-text text-5xl font-bold text-transparent md:text-6xl">
-          Orole-OS
-        </h1>
-        <p className="text-muted-foreground max-w-xl text-balance">
-          A dark-sci-fi operating shell built on TanStack Start — SSR, typed
-          routing, and server state in one rig.
-        </p>
-      </div>
-
-      <PanelErrorBoundary region="core-diagnostics">
-        <GatewayPanel />
-      </PanelErrorBoundary>
-
+      <Hero />
       <ActivityFeed />
-
-      <StateShowcase />
     </main>
   )
 }
