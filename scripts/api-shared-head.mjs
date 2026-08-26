@@ -136,7 +136,10 @@ function cookieHeaders(s) {
   ];
 }
 
-// Normalize Vercel's Node-style (req,res) args into a Web Request.
+// Normalize Vercel's Node-style (req, res) args into a Web Request.
+// Vercel's nodejs runtime passes (IncomingMessage, ServerResponse) and does
+// not accept a handler returning a Web Response — without this adapter every
+// function 500s with FUNCTION_INVOCATION_FAILED (#81).
 function toWebRequest(req, res) {
   if (typeof req.headers?.get === "function") return req; // already Web Request
   const headers = new Headers();
@@ -168,4 +171,27 @@ function sendWeb(res, webResponse) {
   } else {
     res.end();
   }
+}
+
+/**
+ * Wrap an async (Web Request) => Response body into the dual-signature
+ * default export Vercel's nodejs runtime requires.
+ */
+function serve(body) {
+  return async function handler(req, res) {
+    const request = toWebRequest(req, res);
+    try {
+      const response = await body(request);
+      if (res && typeof res.setHeader === "function") {
+        sendWeb(res, response);
+        return;
+      }
+      return response;
+    } catch (err) {
+      console.error("[api]", err);
+      const fail = json({ error: "Internal error" }, 500);
+      if (res && typeof res.setHeader === "function") { sendWeb(res, fail); return; }
+      return fail;
+    }
+  };
 }

@@ -136,10 +136,70 @@ function cookieHeaders(s) {
   ];
 }
 
+// Normalize Vercel's Node-style (req, res) args into a Web Request.
+// Vercel's nodejs runtime passes (IncomingMessage, ServerResponse) and does
+// not accept a handler returning a Web Response — without this adapter every
+// function 500s with FUNCTION_INVOCATION_FAILED (#81).
+function toWebRequest(req, res) {
+  if (typeof req.headers?.get === "function") return req; // already Web Request
+  const headers = new Headers();
+  for (const [k, v] of Object.entries(req.headers ?? {})) {
+    headers.set(k, Array.isArray(v) ? v.join(", ") : String(v));
+  }
+  const url = `https://${req.headers.host ?? "localhost"}${req.url ?? "/"}`;
+  return new Request(url, {
+    method: req.method,
+    headers,
+    body: ["GET", "HEAD"].includes(req.method) ? undefined : req,
+    // @ts-expect-error duplex
+    duplex: "half",
+  });
+}
+
+function sendWeb(res, webResponse) {
+  for (const [k, v] of webResponse.headers) {
+    if (k === "set-cookie") res.setHeader("set-cookie", webResponse.headers.getSetCookie?.() ?? [v]);
+    else res.setHeader(k, v);
+  }
+  res.statusCode = webResponse.status;
+  if (webResponse.body) {
+    void webResponse.body.pipeTo(new WritableStream({
+      write(c) { res.write(Buffer.from(c)); },
+      close() { res.end(); },
+      abort() { res.end(); },
+    }));
+  } else {
+    res.end();
+  }
+}
+
+/**
+ * Wrap an async (Web Request) => Response body into the dual-signature
+ * default export Vercel's nodejs runtime requires.
+ */
+function serve(body) {
+  return async function handler(req, res) {
+    const request = toWebRequest(req, res);
+    try {
+      const response = await body(request);
+      if (res && typeof res.setHeader === "function") {
+        sendWeb(res, response);
+        return;
+      }
+      return response;
+    } catch (err) {
+      console.error("[api]", err);
+      const fail = json({ error: "Internal error" }, 500);
+      if (res && typeof res.setHeader === "function") { sendWeb(res, fail); return; }
+      return fail;
+    }
+  };
+}
+
 
 export const config = { runtime: "nodejs" };
 
-export default async function handler(req) {
+export default serve(async function (req) {
   try {
     const url = new URL(req.url);
     let session = authorize(req);
@@ -173,4 +233,4 @@ export default async function handler(req) {
   } catch (err) {
     return json({ error: "Internal error", detail: String(err?.message ?? err) }, 500);
   }
-}
+});
