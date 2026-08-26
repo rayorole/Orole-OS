@@ -140,9 +140,21 @@ function cookieHeaders(s) {
 export const config = { runtime: "nodejs" };
 
 export default async function handler(req) {
-  const session = authorize(req);
-  if (!session) return json({ error: "Not authenticated" }, 401);
-  // Stateless stream token: a short-lived sealed session, no shared memory.
-  const token = `orole_stream_${sealSession({ key: session.key, expiresAt: Date.now() + 60_000 })}`;
-  return json({ token, expiresIn: 60 }, 200);
+  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
+  if (authorize(req)) return json({ ok: true, alreadyAuthenticated: true }, 200);
+
+  const body = await req.json().catch(() => null);
+  const key = body?.apiKey?.trim();
+  if (!key || key.length < 8 || key.length > 512) {
+    return json({ error: "A valid gateway API key is required" }, 400);
+  }
+  if (!(await verifyGatewayKey(key))) {
+    return json({ error: "The gateway rejected this key" }, 401);
+  }
+
+  const session = createSession(key);
+
+  const headers = new Headers({ "content-type": "application/json" });
+  for (const c of cookieHeaders(session)) headers.append("set-cookie", c);
+  return new Response(JSON.stringify({ ok: true }), { status: 200, headers });
 }

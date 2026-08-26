@@ -140,9 +140,10 @@ function cookieHeaders(s) {
 export const config = { runtime: "nodejs" };
 
 export default async function handler(req) {
-  const session = authorize(req);
-  if (!session) return json({ error: "Not authenticated" }, 401);
-  // Stateless stream token: a short-lived sealed session, no shared memory.
-  const token = `orole_stream_${sealSession({ key: session.key, expiresAt: Date.now() + 60_000 })}`;
-  return json({ token, expiresIn: 60 }, 200);
+  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
+  // Stateless: nothing to delete server-side — the cookie is the session.
+  const headers = new Headers({ "content-type": "application/json" });
+  headers.append("set-cookie", `${SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`);
+  headers.append("set-cookie", `${CSRF_COOKIE}=; Path=/; SameSite=Lax; Max-Age=0`);
+  return new Response(JSON.stringify({ ok: true }), { status: 200, headers });
 }

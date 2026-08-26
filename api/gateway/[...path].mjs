@@ -140,9 +140,37 @@ function cookieHeaders(s) {
 export const config = { runtime: "nodejs" };
 
 export default async function handler(req) {
-  const session = authorize(req);
-  if (!session) return json({ error: "Not authenticated" }, 401);
-  // Stateless stream token: a short-lived sealed session, no shared memory.
-  const token = `orole_stream_${sealSession({ key: session.key, expiresAt: Date.now() + 60_000 })}`;
-  return json({ token, expiresIn: 60 }, 200);
+  try {
+    const url = new URL(req.url);
+    let session = authorize(req);
+    const auth = req.headers.get("authorization");
+    if (!session && auth?.startsWith("Bearer orole_stream_")) {
+      // Stream tokens are sealed sessions themselves — unseal directly.
+      const s = unsealSession(auth.slice(7).trim());
+      if (s?.stream && typeof s.key === "string") session = { ...s, csrfToken: "" };
+    }
+    if (!session) return json({ error: "Not authenticated" }, 401);
+
+    const key = session.key;
+    if (!key) return json({ error: "No gateway key bound to this session" }, 401);
+
+    const upstreamPath = url.pathname.replace(/^\/api\/gateway/, "");
+    const target = `${GATEWAY_BASE}${upstreamPath}${url.search}`;
+
+    const headers = new Headers();
+    headers.set("Authorization", `Bearer ${key}`);
+    headers.set("accept", req.headers.get("accept") ?? "application/json");
+    const ct = req.headers.get("content-type");
+    if (ct) headers.set("content-type", ct);
+
+    return await fetch(target, {
+      method: req.method,
+      headers,
+      body: req.method === "GET" || req.method === "HEAD"
+        ? undefined
+        : await req.arrayBuffer(),
+    }).catch(() => json({ error: "Gateway unreachable" }, 502));
+  } catch (err) {
+    return json({ error: "Internal error", detail: String(err?.message ?? err) }, 500);
+  }
 }
