@@ -16,7 +16,7 @@ mkdirSync("api/gateway", { recursive: true });
 
 writeFileSync(
   "api/auth/login.mjs",
-  wrap(`export default async function handler(req) {
+  wrap(`export default serve(async function (req) {
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
   if (authorize(req)) return json({ ok: true, alreadyAuthenticated: true }, 200);
 
@@ -34,42 +34,42 @@ writeFileSync(
   const headers = new Headers({ "content-type": "application/json" });
   for (const c of cookieHeaders(session)) headers.append("set-cookie", c);
   return new Response(JSON.stringify({ ok: true }), { status: 200, headers });
-}`),
+});`),
 );
 
 writeFileSync(
   "api/auth/logout.mjs",
-  wrap(`export default async function handler(req) {
+  wrap(`export default serve(async function (req) {
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
   // Stateless: nothing to delete server-side — the cookie is the session.
   const headers = new Headers({ "content-type": "application/json" });
   headers.append("set-cookie", \`\${SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0\`);
   headers.append("set-cookie", \`\${CSRF_COOKIE}=; Path=/; SameSite=Lax; Max-Age=0\`);
   return new Response(JSON.stringify({ ok: true }), { status: 200, headers });
-}`),
+});`),
 );
 
 writeFileSync(
   "api/auth/session.mjs",
-  wrap(`export default async function handler(req) {
+  wrap(`export default serve(async function (req) {
   return json({ authenticated: Boolean(authorize(req)) }, 200);
-}`),
+});`),
 );
 
 writeFileSync(
   "api/auth/stream-token.mjs",
-  wrap(`export default async function handler(req) {
+  wrap(`export default serve(async function (req) {
   const session = authorize(req);
   if (!session) return json({ error: "Not authenticated" }, 401);
   // Stateless stream token: a short-lived sealed session, no shared memory.
   const token = \`orole_stream_\${sealSession({ key: session.key, expiresAt: Date.now() + 60_000 })}\`;
   return json({ token, expiresIn: 60 }, 200);
-}`),
+});`),
 );
 
 writeFileSync(
   "api/gateway/[...path].mjs",
-  wrap(`export default async function handler(req) {
+  wrap(`export default serve(async function (req) {
   try {
     const url = new URL(req.url);
     let session = authorize(req);
@@ -103,7 +103,7 @@ writeFileSync(
   } catch (err) {
     return json({ error: "Internal error", detail: String(err?.message ?? err) }, 500);
   }
-}`),
+});`),
 );
 
 console.log("generated api/ functions");
