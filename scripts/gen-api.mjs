@@ -29,8 +29,7 @@ writeFileSync(
     return json({ error: "The gateway rejected this key" }, 401);
   }
 
-  const session = createSession();
-  keyRing.set(session.id, key);
+  const session = createSession(key);
 
   const headers = new Headers({ "content-type": "application/json" });
   for (const c of cookieHeaders(session)) headers.append("set-cookie", c);
@@ -42,11 +41,7 @@ writeFileSync(
   "api/auth/logout.mjs",
   wrap(`export default async function handler(req) {
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
-  const id = parseCookies(req.headers.get("cookie"))[SESSION_COOKIE];
-  if (id) {
-    sessions.delete(id);
-    keyRing.delete(id);
-  }
+  // Stateless: nothing to delete server-side — the cookie is the session.
   const headers = new Headers({ "content-type": "application/json" });
   headers.append("set-cookie", \`\${SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0\`);
   headers.append("set-cookie", \`\${CSRF_COOKIE}=; Path=/; SameSite=Lax; Max-Age=0\`);
@@ -66,8 +61,8 @@ writeFileSync(
   wrap(`export default async function handler(req) {
   const session = authorize(req);
   if (!session) return json({ error: "Not authenticated" }, 401);
-  const token = \`orole_stream_\${newToken()}\`;
-  streamTokens.set(token, { owner: session.id, expiresAt: Date.now() + 60_000 });
+  // Stateless stream token: a short-lived sealed session, no shared memory.
+  const token = \`orole_stream_\${sealSession({ key: session.key, expiresAt: Date.now() + 60_000 })}\`;
   return json({ token, expiresIn: 60 }, 200);
 }`),
 );
@@ -79,17 +74,14 @@ writeFileSync(
     const url = new URL(req.url);
     let session = authorize(req);
     const auth = req.headers.get("authorization");
-    if (!session && auth?.startsWith("Bearer ")) {
-      const raw = auth.slice(7).trim();
-      const entry = streamTokens.get(raw);
-      if (entry && Date.now() <= entry.expiresAt) {
-        streamTokens.delete(raw);
-        session = sessions.get(entry.owner) ?? null;
-      }
+    if (!session && auth?.startsWith("Bearer orole_stream_")) {
+      // Stream tokens are sealed sessions themselves — unseal directly.
+      const s = unsealSession(auth.slice(7).trim());
+      if (s?.stream && typeof s.key === "string") session = { ...s, csrfToken: "" };
     }
     if (!session) return json({ error: "Not authenticated" }, 401);
 
-    const key = keyRing.get(session.id);
+    const key = session.key;
     if (!key) return json({ error: "No gateway key bound to this session" }, 401);
 
     const upstreamPath = url.pathname.replace(/^\\/api\\/gateway/, "");
