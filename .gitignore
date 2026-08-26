@@ -10,3 +10,6 @@ build
 tsconfig.tsbuildinfo
 .vercel
 .env*
+
+# generated at build time by scripts/gen-api.mjs
+/api/
